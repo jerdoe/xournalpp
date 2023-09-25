@@ -39,6 +39,7 @@
 #include "control/xojfile/LoadHandler.h"                         // for Load...
 #include "control/zoom/ZoomControl.h"                            // for Zoom...
 #include "gui/MainWindow.h"                                      // for Main...
+#include "gui/OpacityPreviewToolbox.h"                           // for OpacityPreviewToolbox
 #include "gui/PageView.h"                                        // for XojP...
 #include "gui/PdfFloatingToolbox.h"                              // for PdfF...
 #include "gui/SearchBar.h"                                       // for Sear...
@@ -59,6 +60,7 @@
 #include "gui/inputdevices/SetsquareInputHandler.h"              // for Sets...
 #include "gui/menus/menubar/Menubar.h"                           // for Menubar
 #include "gui/sidebar/Sidebar.h"                                 // for Sidebar
+#include "gui/toolbarMenubar/ColorToolItem.h"
 #include "gui/toolbarMenubar/ToolMenuHandler.h"                  // for Tool...
 #include "gui/toolbarMenubar/model/ToolbarData.h"                // for Tool...
 #include "gui/toolbarMenubar/model/ToolbarModel.h"               // for Tool...
@@ -1100,6 +1102,10 @@ void Control::toolChanged() {
             win->getXournal()->endSplineAllPages();
         }
     }
+
+    if (win) {
+        win->getOpacityPreviewToolbox()->hide();
+    }
 }
 
 void Control::eraserSizeChanged() {
@@ -1196,6 +1202,51 @@ void Control::changeColorOfSelection() {
         if (this->toolHandler->getToolType() == TOOL_TEXT && edit != nullptr) {
             // Todo move into selection
             edit->setColor(toolHandler->getColor());
+        }
+
+        if (this->toolHandler->getToolType() == TOOL_SELECT_PDF_TEXT_LINEAR ||
+            this->toolHandler->getToolType() == TOOL_SELECT_PDF_TEXT_RECT) {
+            const std::vector<ColorToolItem*> colorItems = win->getToolMenuHandler()->getColorToolItems();
+
+            const ColorToolItem* noCustomColorItemPtr = nullptr;
+
+            for (const ColorToolItem* colorItem: colorItems) {
+                Color toolColor = toolHandler->getColor();
+                // Ignore alpha channel to compare tool color with button color
+                toolColor.alpha = 0;
+                if (toolColor == colorItem->getColor() && colorItem->getToolDisplayName() != "Custom Color") {
+                    noCustomColorItemPtr = colorItem;
+                }
+            }
+            if (noCustomColorItemPtr != nullptr) {
+                gint x = 0, y = 0;  // Coordinates
+
+                GtkWidget* widget = GTK_WIDGET(noCustomColorItemPtr->getItem());
+
+                // Translate the coordinates of 'widget' to the window's coordinate space
+                // gtk_widget_translate_coordinates(GTK_WIDGET(noCustomColorItemPtr->getItem()), win->getWindow(), 0, 0,
+                // &x, &y); gtk_widget_translate_coordinates(GTK_WIDGET(noCustomColorItemPtr->getItem()),
+                // win->getWindow(), 0, 0, &x, &y);
+                // gtk_widget_translate_coordinates(GTK_WIDGET(noCustomColorItemPtr->getItem()), this->getGtkWindow(),
+                // 0, 0, &x, &y);
+                gtk_widget_translate_coordinates(widget, win->getWindow(), 0, 0, &x, &y);
+
+                bool addBorder = false;
+                if (toolHandler->getToolType() == TOOL_PEN) {
+                    addBorder = true;
+                }
+                win->getOpacityPreviewToolbox()->update(toolHandler->getColor(), addBorder);
+
+                // Vertically centered with the color button
+                x -= (static_cast<int>(std::round(gtk_widget_get_allocated_width(widget) / 2)));
+
+                // Below the color button
+                y += gtk_widget_get_allocated_height(widget);
+
+                win->getOpacityPreviewToolbox()->show(x + 1, y);
+
+                noCustomColorItemPtr = nullptr;
+            }
         }
     }
 }
