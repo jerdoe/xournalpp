@@ -7,6 +7,7 @@
 #include <glib.h>     // for gboolean
 #include <gtk/gtk.h>  // for GtkButton, GtkOverlay
 
+#include "gui/toolbarMenubar/ColorToolItem.h"
 #include "util/Color.h"             // for Color
 #include "util/raii/GObjectSPtr.h"  // for GObjectSPtr
 
@@ -22,22 +23,28 @@ public:
     ~OpacityPreviewToolbox();
 
 public:
-    /// Show the toolbox at the provided coordinates (relative to the application GTK window).
-    ///
-    /// Must have an active selection.
-    void show(int x, int y);
+    void update();
 
+private:
     /// Hide the floating toolbox widget (keeping the current selection).
     void hide();
+
+    /// Show the toolbox at the provided coordinates
+    void show();
+
+    void updatePreviewImage();
+
+    void updateWidgetCoordinates(const ColorToolItem* selectedColorItem);
+
+    void updateScaleValue();
 
     /// Returns true if the toolbox is currently hidden.
     bool isHidden() const;
 
-    void update(Color color, bool addBorder);
+    const ColorToolItem* getSelectedColorItem();
 
-private:
-    void show();
     static void changeValue(GtkRange* range, GtkScrollType scroll, gdouble value, OpacityPreviewToolbox* self);
+    static gboolean buttonReleased(GtkRange* range, GdkEventButton* event, OpacityPreviewToolbox* self);
 
     static gboolean getOverlayPosition(GtkOverlay* overlay, GtkWidget* widget, GdkRectangle* allocation,
                                        OpacityPreviewToolbox* self);

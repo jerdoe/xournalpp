@@ -8,6 +8,8 @@
 
 #include "control/Control.h"      // for Tool...
 #include "control/ToolHandler.h"  // for Tool...
+#include "gui/toolbarMenubar/ColorToolItem.h"
+#include "gui/toolbarMenubar/ToolMenuHandler.h"  // for Tool...
 #include "util/Color.h"
 #include "util/raii/CairoWrappers.h"
 #include "util/raii/GObjectSPtr.h"
@@ -15,6 +17,7 @@
 #include "MainWindow.h"  // for MainWindow
 
 static int percentToByte(double percent) { return static_cast<int>(std::round(percent * 2.55)); }
+static double byteToPercent(int byte) { return byte / 2.55; }
 
 OpacityPreviewToolbox::OpacityPreviewToolbox(MainWindow* theMainWindow, GtkOverlay* overlay):
         theMainWindow(theMainWindow), overlay(overlay, xoj::util::ref), position({0, 0}) {
@@ -27,36 +30,131 @@ OpacityPreviewToolbox::OpacityPreviewToolbox(MainWindow* theMainWindow, GtkOverl
 
     g_signal_connect(theMainWindow->get("opacityPreviewToolScaleAlpha"), "change-value", G_CALLBACK(this->changeValue),
                      this);
+
+    g_signal_connect(theMainWindow->get("opacityPreviewToolScaleAlpha"), "button-release-event",
+                     G_CALLBACK(this->buttonReleased), this);
     this->hide();
 }
 
 void OpacityPreviewToolbox::changeValue(GtkRange* range, GtkScrollType scroll, gdouble value,
                                         OpacityPreviewToolbox* self) {
-    Color color = self->color;
-    color.alpha = static_cast<uint8_t>(percentToByte(value));
-    self->update(color, self->addBorder);
     gtk_range_set_value(range, value);
+    gdouble rangedValue = gtk_range_get_value(range);
+    self->color.alpha = static_cast<uint8_t>(percentToByte(rangedValue));
+    self->updatePreviewImage();
+}
+
+gboolean OpacityPreviewToolbox::buttonReleased(GtkRange* range, GdkEventButton* event, OpacityPreviewToolbox* self) {
+    double value = gtk_range_get_value(range);
+    self->color.alpha = static_cast<uint8_t>(percentToByte(value));
 
     ToolHandler* toolHandler = self->theMainWindow->getControl()->getToolHandler();
+
     switch (toolHandler->getToolType()) {
         case TOOL_SELECT_PDF_TEXT_RECT:
         case TOOL_SELECT_PDF_TEXT_LINEAR:
-            toolHandler->setSelectPDFTextMarkerOpacity(color.alpha);
+            toolHandler->setSelectPDFTextMarkerOpacity(self->color.alpha);
             break;
         default:
-            toolHandler->setColor(color, true);
+            toolHandler->setColor(self->color, false);
             break;
     }
+    return false;
 }
 
 const int PREVIEW_WIDTH = 70;
 const int PREVIEW_HEIGHT = 50;
 const int PREVIEW_BORDER = 10;
 
-void OpacityPreviewToolbox::update(Color color, bool addBorder) {
-    this->color = color;
-    this->addBorder = addBorder;
+const ColorToolItem* OpacityPreviewToolbox::getSelectedColorItem() {
+    const std::vector<ColorToolItem*> colorItems = this->theMainWindow->getToolMenuHandler()->getColorToolItems();
 
+    const ColorToolItem* noCustomColorItemPtr = nullptr;
+
+    for (const ColorToolItem* colorItem: colorItems) {
+        Color toolColor = color;
+        // Ignore alpha channel to compare tool color with button color
+        toolColor.alpha = 0;
+        if (toolColor == colorItem->getColor() && colorItem->getToolDisplayName() != "Custom Color") {
+            noCustomColorItemPtr = colorItem;
+        }
+    }
+    return noCustomColorItemPtr;
+}
+
+void OpacityPreviewToolbox::updateWidgetCoordinates(const ColorToolItem* colorToolItemPtr) {
+    Color color = this->color;
+    color.alpha = 0;
+
+    // Disregarding alpha channel, if the selected color matches the widget's color,
+    // the widget is already in the correct position.
+    // Coordinates don't need to be updated
+    if (color == colorToolItemPtr->getColor()) {
+        GtkWidget* selectedColorWidget = GTK_WIDGET(colorToolItemPtr->getItem());
+        GtkWidget* overlayWidget = GTK_WIDGET(overlay.get());
+
+        // Copy coordinates of selectedColorWidget in this->position.x and this->position.y
+        // using overlay's coordinate space
+        gtk_widget_translate_coordinates(selectedColorWidget, overlayWidget, 0, 0, &this->position.x,
+                                         &this->position.y);
+
+        // Adjust this->position.x to center it vertically with selected color item.
+        int offset_x = static_cast<int>(std::round((gtk_widget_get_allocated_width(selectedColorWidget) -
+                                                    gtk_widget_get_allocated_width(this->opacityPreviewToolbox)) /
+                                                   2));
+        this->position.x += offset_x;
+
+        // Below the color button
+        this->position.y += gtk_widget_get_allocated_height(selectedColorWidget);
+    }
+}
+
+void OpacityPreviewToolbox::update() {
+    MainWindow* win = this->theMainWindow;
+    ToolHandler* toolHandler = win->getControl()->getToolHandler();
+
+    bool hidden = false;
+    bool addBorder = false;
+    Color color = toolHandler->getColor();
+
+    switch (toolHandler->getToolType()) {
+        case TOOL_PEN:
+            addBorder = true;
+            hidden = false;
+            break;
+        case TOOL_SELECT_PDF_TEXT_RECT:
+        case TOOL_SELECT_PDF_TEXT_LINEAR:
+            addBorder = false;
+            hidden = false;
+            break;
+        default:
+            hidden = true;
+            break;
+    }
+
+    if (!hidden) {
+        this->addBorder = addBorder;
+        this->color = color;
+
+        const ColorToolItem* noCustomColorItemPtr = this->getSelectedColorItem();
+
+        if (noCustomColorItemPtr != nullptr) {
+            this->updateWidgetCoordinates(noCustomColorItemPtr);
+            this->updatePreviewImage();
+            this->updateScaleValue();
+        }
+        this->show();
+    } else {
+        this->hide();
+    }
+}
+
+void OpacityPreviewToolbox::updateScaleValue() {
+    GtkRange* rangeWidget = (GtkRange*)this->theMainWindow->get("opacityPreviewToolScaleAlpha");
+    gtk_range_set_value(rangeWidget, byteToPercent(this->color.alpha));
+}
+
+void OpacityPreviewToolbox::updatePreviewImage() {
     xoj::util::CairoSurfaceSPtr surface(cairo_image_surface_create(CAIRO_FORMAT_ARGB32, PREVIEW_WIDTH, PREVIEW_HEIGHT),
                                         xoj::util::adopt);
     xoj::util::CairoSPtr cairo(cairo_create(surface.get()), xoj::util::adopt);
@@ -75,8 +173,9 @@ void OpacityPreviewToolbox::update(Color color, bool addBorder) {
     if (addBorder) {
         cairo_set_line_width(cr, 5);
         cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-        color.alpha = 255;
-        Util::cairo_set_source_argb(cr, color);
+        Color borderColor = color;
+        borderColor.alpha = 255;
+        Util::cairo_set_source_argb(cr, borderColor);
         cairo_rectangle(cr, PREVIEW_BORDER, PREVIEW_BORDER, PREVIEW_WIDTH - PREVIEW_BORDER * 2,
                         PREVIEW_HEIGHT - PREVIEW_BORDER * 2);
         cairo_stroke(cr);
@@ -88,12 +187,9 @@ void OpacityPreviewToolbox::update(Color color, bool addBorder) {
 }
 OpacityPreviewToolbox::~OpacityPreviewToolbox() = default;
 
-void OpacityPreviewToolbox::show(int x, int y) {
-    // (x, y) are in the gtk window's coordinates.
-    // However, we actually show the toolbox in the overlay's coordinate system.
-    gtk_widget_translate_coordinates(gtk_widget_get_toplevel(this->opacityPreviewToolbox), GTK_WIDGET(overlay.get()), x,
-                                     y, &this->position.x, &this->position.y);
-    this->show();
+void OpacityPreviewToolbox::show() {
+    gtk_widget_hide(this->opacityPreviewToolbox);  // force showing in new position
+    gtk_widget_show_all(this->opacityPreviewToolbox);
 }
 
 void OpacityPreviewToolbox::hide() {
@@ -113,11 +209,10 @@ auto OpacityPreviewToolbox::getOverlayPosition(GtkOverlay* overlay, GtkWidget* w
         allocation->height = natural.height;
 
         // Make sure the "OpacityPreviewToolbox" is fully displayed.
-        const int gap = 5;
+        //        const int gap = 5;
+        const int gap = 0;
 
-        // By default, we show the toolbox below and to the right of the selected text.
         // If the toolbox will go out of the window, then we'll flip the corresponding directions.
-
         GtkAllocation windowAlloc{};
         gtk_widget_get_allocation(GTK_WIDGET(overlay), &windowAlloc);
 
@@ -132,11 +227,5 @@ auto OpacityPreviewToolbox::getOverlayPosition(GtkOverlay* overlay, GtkWidget* w
 
     return false;
 }
-
-void OpacityPreviewToolbox::show() {
-    gtk_widget_hide(this->opacityPreviewToolbox);  // force showing in new position
-    gtk_widget_show_all(this->opacityPreviewToolbox);
-}
-
 
 bool OpacityPreviewToolbox::isHidden() const { return !gtk_widget_is_visible(this->opacityPreviewToolbox); }
