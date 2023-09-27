@@ -24,11 +24,9 @@ public:
 
 public:
     void update();
-
-private:
-    /// Hide the floating toolbox widget (keeping the current selection).
     void hide();
 
+private:
     /// Show the toolbox at the provided coordinates
     void show();
 

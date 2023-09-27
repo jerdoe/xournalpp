@@ -46,6 +46,7 @@
 #include "control/tools/VerticalToolHandler.h"      // for VerticalToolHandler
 #include "gui/FloatingToolbox.h"                    // for FloatingToolbox
 #include "gui/MainWindow.h"                         // for MainWindow
+#include "gui/OpacityPreviewToolbox.h"
 #include "gui/PdfFloatingToolbox.h"                 // for PdfFloatingToolbox
 #include "gui/SearchBar.h"                          // for SearchBar
 #include "gui/inputdevices/PositionInputData.h"     // for PositionInputData
@@ -418,6 +419,8 @@ auto XojPageView::onButtonClickEvent(const PositionInputData& pos) -> bool {
     if (h->getToolType() == TOOL_FLOATING_TOOLBOX) {
         this->showFloatingToolbox(pos);
     }
+
+    control->getWindow()->getOpacityPreviewToolbox()->hide();
 
     return true;
 }

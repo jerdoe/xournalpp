@@ -33,7 +33,6 @@ OpacityPreviewToolbox::OpacityPreviewToolbox(MainWindow* theMainWindow, GtkOverl
 
     g_signal_connect(theMainWindow->get("opacityPreviewToolScaleAlpha"), "button-release-event",
                      G_CALLBACK(this->buttonReleased), this);
-    this->hide();
 }
 
 void OpacityPreviewToolbox::changeValue(GtkRange* range, GtkScrollType scroll, gdouble value,
