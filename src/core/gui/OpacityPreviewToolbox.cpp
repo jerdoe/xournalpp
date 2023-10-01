@@ -31,8 +31,8 @@ OpacityPreviewToolbox::OpacityPreviewToolbox(MainWindow* theMainWindow, GtkOverl
     g_signal_connect(theMainWindow->get("opacityPreviewToolScaleAlpha"), "change-value", G_CALLBACK(this->changeValue),
                      this);
 
-    g_signal_connect(theMainWindow->get("opacityPreviewToolScaleAlpha"), "button-release-event",
-                     G_CALLBACK(this->buttonReleased), this);
+    g_signal_connect(theMainWindow->get("opacityPreviewToolScaleAlpha"), "leave-notify-event",
+                     G_CALLBACK(this->handleLeave), this);
 }
 
 void OpacityPreviewToolbox::changeValue(GtkRange* range, GtkScrollType scroll, gdouble value,
@@ -43,7 +43,7 @@ void OpacityPreviewToolbox::changeValue(GtkRange* range, GtkScrollType scroll, g
     self->updatePreviewImage();
 }
 
-gboolean OpacityPreviewToolbox::buttonReleased(GtkRange* range, GdkEventButton* event, OpacityPreviewToolbox* self) {
+gboolean OpacityPreviewToolbox::handleLeave(GtkRange* range, GdkEvent* event, OpacityPreviewToolbox* self) {
     double value = gtk_range_get_value(range);
     self->color.alpha = static_cast<uint8_t>(percentToByte(value));
 

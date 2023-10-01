@@ -42,7 +42,7 @@ private:
     const ColorToolItem* getSelectedColorItem();
 
     static void changeValue(GtkRange* range, GtkScrollType scroll, gdouble value, OpacityPreviewToolbox* self);
-    static gboolean buttonReleased(GtkRange* range, GdkEventButton* event, OpacityPreviewToolbox* self);
+    static gboolean handleLeave(GtkRange* range, GdkEvent* event, OpacityPreviewToolbox* self);
 
     static gboolean getOverlayPosition(GtkOverlay* overlay, GtkWidget* widget, GdkRectangle* allocation,
                                        OpacityPreviewToolbox* self);
