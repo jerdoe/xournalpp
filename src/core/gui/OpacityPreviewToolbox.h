@@ -23,23 +23,18 @@ public:
     ~OpacityPreviewToolbox();
 
 public:
+    void show();
     void update();
     void hide();
 
 private:
-    /// Show the toolbox at the provided coordinates
-    void show();
-
     void updatePreviewImage();
-
-    void updateWidgetCoordinates(const ColorToolItem* selectedColorItem);
-
+    void updateSelectedColorItem();
+    void updateCoordinates();
     void updateScaleValue();
 
     /// Returns true if the toolbox is currently hidden.
     bool isHidden() const;
-
-    const ColorToolItem* getSelectedColorItem();
 
     static void changeValue(GtkRange* range, GtkScrollType scroll, gdouble value, OpacityPreviewToolbox* self);
     static gboolean handleLeave(GtkRange* range, GdkEvent* event, OpacityPreviewToolbox* self);
@@ -50,12 +45,14 @@ private:
 private:
     GtkWidget* opacityPreviewToolbox;
     MainWindow* theMainWindow;
+    const ColorToolItem* selectedColorItem;
 
     /// The overlay that the toolbox should be displayed in.
     xoj::util::GObjectSPtr<GtkOverlay> overlay;
 
     Color color;
     bool addBorder;
+    bool hidden = true;
 
     struct {
         int x;

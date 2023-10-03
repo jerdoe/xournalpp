@@ -65,49 +65,6 @@ const int PREVIEW_WIDTH = 70;
 const int PREVIEW_HEIGHT = 50;
 const int PREVIEW_BORDER = 10;
 
-const ColorToolItem* OpacityPreviewToolbox::getSelectedColorItem() {
-    const std::vector<ColorToolItem*> colorItems = this->theMainWindow->getToolMenuHandler()->getColorToolItems();
-
-    const ColorToolItem* noCustomColorItemPtr = nullptr;
-
-    for (const ColorToolItem* colorItem: colorItems) {
-        Color toolColor = color;
-        // Ignore alpha channel to compare tool color with button color
-        toolColor.alpha = 0;
-        if (toolColor == colorItem->getColor() && colorItem->getToolDisplayName() != "Custom Color") {
-            noCustomColorItemPtr = colorItem;
-        }
-    }
-    return noCustomColorItemPtr;
-}
-
-void OpacityPreviewToolbox::updateWidgetCoordinates(const ColorToolItem* colorToolItemPtr) {
-    Color color = this->color;
-    color.alpha = 0;
-
-    // Disregarding alpha channel, if the selected color matches the widget's color,
-    // the widget is already in the correct position.
-    // Coordinates don't need to be updated
-    if (color == colorToolItemPtr->getColor()) {
-        GtkWidget* selectedColorWidget = GTK_WIDGET(colorToolItemPtr->getItem());
-        GtkWidget* overlayWidget = GTK_WIDGET(overlay.get());
-
-        // Copy coordinates of selectedColorWidget in this->position.x and this->position.y
-        // using overlay's coordinate space
-        gtk_widget_translate_coordinates(selectedColorWidget, overlayWidget, 0, 0, &this->position.x,
-                                         &this->position.y);
-
-        // Adjust this->position.x to center it vertically with selected color item.
-        int offset_x = static_cast<int>(std::round((gtk_widget_get_allocated_width(selectedColorWidget) -
-                                                    gtk_widget_get_allocated_width(this->opacityPreviewToolbox)) /
-                                                   2));
-        this->position.x += offset_x;
-
-        // Below the color button
-        this->position.y += gtk_widget_get_allocated_height(selectedColorWidget);
-    }
-}
-
 void OpacityPreviewToolbox::update() {
     MainWindow* win = this->theMainWindow;
     ToolHandler* toolHandler = win->getControl()->getToolHandler();
@@ -135,16 +92,52 @@ void OpacityPreviewToolbox::update() {
         this->addBorder = addBorder;
         this->color = color;
 
-        const ColorToolItem* noCustomColorItemPtr = this->getSelectedColorItem();
+        this->updateSelectedColorItem();
 
-        if (noCustomColorItemPtr != nullptr) {
-            this->updateWidgetCoordinates(noCustomColorItemPtr);
+        if (this->selectedColorItem != nullptr) {
+            this->updateCoordinates();
             this->updatePreviewImage();
             this->updateScaleValue();
         }
         this->show();
     } else {
         this->hide();
+    }
+}
+
+void OpacityPreviewToolbox::updateSelectedColorItem() {
+    const std::vector<ColorToolItem*> colorItems = this->theMainWindow->getToolMenuHandler()->getColorToolItems();
+
+    this->selectedColorItem = nullptr;
+
+    for (const ColorToolItem* colorItem: colorItems) {
+        Color toolColor = color;
+        // Ignore alpha channel to compare tool color with button color
+        toolColor.alpha = 0;
+        if (toolColor == colorItem->getColor() && colorItem->getToolDisplayName() != "Custom Color") {
+            this->selectedColorItem = colorItem;
+        }
+    }
+}
+
+void OpacityPreviewToolbox::updateCoordinates() {
+    Color color = this->color;
+    color.alpha = 0;
+
+    // Disregarding alpha channel, if the selected color matches the widget's color,
+    // the widget is already in the correct position.
+    // Coordinates don't need to be updated
+    if (color == this->selectedColorItem->getColor()) {
+        GtkWidget* selectedColorWidget = GTK_WIDGET(this->selectedColorItem->getItem());
+        GtkWidget* overlayWidget = GTK_WIDGET(overlay.get());
+
+        // Copy coordinates of selectedColorWidget in this->position.x and this->position.y
+        // using overlay's coordinate space
+        gtk_widget_translate_coordinates(selectedColorWidget, overlayWidget, 0, 0, &this->position.x,
+                                         &this->position.y);
+
+        // Below the color button
+        this->position.y += gtk_widget_get_allocated_height(selectedColorWidget);
     }
 }
 
@@ -187,11 +180,14 @@ void OpacityPreviewToolbox::updatePreviewImage() {
 OpacityPreviewToolbox::~OpacityPreviewToolbox() = default;
 
 void OpacityPreviewToolbox::show() {
+    this->hidden = false;
     gtk_widget_hide(this->opacityPreviewToolbox);  // force showing in new position
     gtk_widget_show_all(this->opacityPreviewToolbox);
 }
 
 void OpacityPreviewToolbox::hide() {
+    this->hidden = true;
+
     if (isHidden())
         return;
 
@@ -200,7 +196,7 @@ void OpacityPreviewToolbox::hide() {
 
 auto OpacityPreviewToolbox::getOverlayPosition(GtkOverlay* overlay, GtkWidget* widget, GdkRectangle* allocation,
                                                OpacityPreviewToolbox* self) -> gboolean {
-    if (widget == self->opacityPreviewToolbox) {
+    if (widget == self->opacityPreviewToolbox && !self->hidden) {
         // Get existing width and height
         GtkRequisition natural;
         gtk_widget_get_preferred_size(widget, nullptr, &natural);
@@ -211,14 +207,20 @@ auto OpacityPreviewToolbox::getOverlayPosition(GtkOverlay* overlay, GtkWidget* w
         //        const int gap = 5;
         const int gap = 0;
 
+        int colorItem_width = gtk_widget_get_allocated_width(GTK_WIDGET(self->selectedColorItem->getItem()));
+
+        // Adjust self->position.x to center it vertically with selected color item.
+        int offset_x = static_cast<int>(std::round((colorItem_width - allocation->width) / 2));
+        int adjusted_position_x = self->position.x + offset_x;
+
         // If the toolbox will go out of the window, then we'll flip the corresponding directions.
         GtkAllocation windowAlloc{};
         gtk_widget_get_allocation(GTK_WIDGET(overlay), &windowAlloc);
 
-        bool rightOK = self->position.x + allocation->width + gap <= windowAlloc.width;
+        bool rightOK = adjusted_position_x + allocation->width + gap <= windowAlloc.width;
         bool bottomOK = self->position.y + allocation->height + gap <= windowAlloc.height;
 
-        allocation->x = rightOK ? self->position.x + gap : self->position.x - allocation->width - gap;
+        allocation->x = rightOK ? adjusted_position_x + gap : adjusted_position_x - allocation->width - gap;
         allocation->y = bottomOK ? self->position.y + gap : self->position.y - allocation->height - gap;
 
         return true;
