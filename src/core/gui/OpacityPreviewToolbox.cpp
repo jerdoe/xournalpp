@@ -398,10 +398,13 @@ void OpacityPreviewToolbox::hide() {
 
 auto OpacityPreviewToolbox::getOverlayPosition(GtkOverlay* overlay, GtkWidget* widget, GdkRectangle* allocation,
                                                OpacityPreviewToolbox* self) -> gboolean {
+    if (widget != self->opacityPreviewToolbox.widget && widget != self->selectedColor.eventBox.widget) {
+        return false;
+    }
+
     self->odebug_enter("getOverlayPosition");
-    bool handled = false;
+
     if (self->enabled) {
-        handled = true;
         self->update(true);
 
         if (widget == self->opacityPreviewToolbox.widget) {
@@ -423,19 +426,16 @@ auto OpacityPreviewToolbox::getOverlayPosition(GtkOverlay* overlay, GtkWidget* w
         // in selectedColor.eventBox.allocation.x and selectedColor.eventBox.allocation.y
         // using overlay's coordinate space
         gtk_widget_translate_coordinates(widget, GTK_WIDGET(overlay), 0, 0, &allocation->x, &allocation->y);
-
-        handled = true;
     }
 
     self->odebug_current_func("widget_name='%s' ; "
                               "allocation->x ='%i' ; allocation->y='%i' ; "
-                              "allocation->width='%i' ; allocation->height='%i' ; "
-                              "handled='%i'",
+                              "allocation->width='%i' ; allocation->height='%i'",
                               gtk_widget_get_name(widget), allocation->x, allocation->y, allocation->width,
-                              allocation->height, handled);
+                              allocation->height);
 
     self->odebug_exit();
-    return handled;
+    return true;
 }
 
 bool OpacityPreviewToolbox::isHidden() const { return !gtk_widget_is_visible(this->opacityPreviewToolbox.widget); }
