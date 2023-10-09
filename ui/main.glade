@@ -840,6 +840,7 @@
     <property name="reveal-child">True</property>
     <child>
       <object class="GtkBox" id="vboxOpacityPreviewTool">
+        <property name="name">vboxOpacityPreviewTool</property>
         <property name="visible">True</property>
         <property name="can-focus">False</property>
         <property name="orientation">vertical</property>
@@ -858,6 +859,7 @@
         </child>
         <child>
           <object class="GtkScale" id="opacityPreviewToolScaleAlpha">
+            <property name="name">opacityPreviewToolScaleAlpha</property>
             <property name="visible">True</property>
             <property name="can-focus">True</property>
             <property name="adjustment">opacityPreviewToolAdjustment</property>
