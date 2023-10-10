@@ -60,8 +60,7 @@ gboolean OpacityPreviewToolbox::enterEventBox(GtkWidget* eventBox, GdkEventCross
     self->odebug_current_func("event->detail=%i ; event->mode=%i ; event->focus = %i", event->detail, event->mode,
                               event->focus);
 
-    self->show();
-    self->update();
+    self->showToolbox();
 
     self->odebug_exit();
     return false;
@@ -113,7 +112,7 @@ gboolean OpacityPreviewToolbox::leaveEventBox(GtkWidget* eventBox, GdkEventCross
                 static_cast<gint>(self->selectedColor.eventBox.lastEventMotion.x_root),
                 static_cast<gint>(self->selectedColor.eventBox.lastEventMotion.y_root),
                 self->opacityPreviewToolbox.widget, self)) {
-        self->hide();
+        self->hideToolbox();
     }
     self->odebug_exit();
     return false;
@@ -135,18 +134,18 @@ gboolean OpacityPreviewToolbox::leaveOpacityToolbox(GtkWidget* opacityToolbox, G
     self->odebug_current_func("event->detail=%i ; event->mode=%i ; event->focus = %i", event->detail, event->mode,
                               event->focus);
 
-    bool hideWidget = false;
+    bool hideToolbox = false;
 
     switch (event->detail) {
         case GDK_NOTIFY_INFERIOR:
-            hideWidget = false;
+            hideToolbox = false;
             break;
         default:
-            hideWidget = true;
+            hideToolbox = true;
             break;
     }
 
-    if (hideWidget) {
+    if (hideToolbox) {
         GtkRange* range = GTK_RANGE(self->theMainWindow->get("opacityPreviewToolScaleAlpha"));
         double value = gtk_range_get_value(range);
 
@@ -163,7 +162,7 @@ gboolean OpacityPreviewToolbox::leaveOpacityToolbox(GtkWidget* opacityToolbox, G
                 toolHandler->setColor(self->color, false);
                 break;
         }
-        self->hide();
+        self->hideToolbox();
     }
     self->odebug_exit();
     return false;
@@ -173,59 +172,57 @@ const int PREVIEW_WIDTH = 70;
 const int PREVIEW_HEIGHT = 50;
 const int PREVIEW_BORDER = 10;
 
-void OpacityPreviewToolbox::update(bool partial) {
-    this->odebug_enter("update");
+bool OpacityPreviewToolbox::isEnabled() {
+    this->odebug_enter("isEnabled");
+
     MainWindow* win = this->theMainWindow;
     ToolHandler* toolHandler = win->getControl()->getToolHandler();
 
-    this->enabled = true;
-    this->color = toolHandler->getColor();
+    bool result;
 
     switch (toolHandler->getToolType()) {
         case TOOL_PEN:
-            this->addBorder = true;
-            this->enabled = true;
-            break;
         case TOOL_SELECT_PDF_TEXT_RECT:
         case TOOL_SELECT_PDF_TEXT_LINEAR:
-            this->addBorder = false;
-            this->enabled = true;
+            result = true;
             break;
         default:
-            this->enabled = false;
+            result = false;
             break;
     }
 
-    if (!partial) {
-        if (enabled) {
-            gtk_widget_show_all(this->selectedColor.eventBox.widget);
-        } else {
-            gtk_widget_hide(this->selectedColor.eventBox.widget);
-        }
-    }
+    this->odebug_exit();
+    return result;
+}
 
-    if (this->enabled) {
+void OpacityPreviewToolbox::update() {
+    this->odebug_enter("update");
+
+    ToolHandler* toolHandler = theMainWindow->getControl()->getToolHandler();
+    this->color = toolHandler->getColor();
+
+    bool enabled = this->isEnabled();
+
+    if (enabled) {
+        gtk_widget_show_all(this->selectedColor.eventBox.widget);
+
         this->updateSelectedColorItem();
 
-        if (this->selectedColor.item != nullptr) {
-            this->updateEventBoxAllocation();
-            this->updateOpacityToolboxAllocation();
+        this->updateEventBoxAllocation();
+        this->updateOpacityToolboxAllocation();
 
-            if (!partial) {
-                this->updateScaleValue();
-                this->updatePreviewImage();
+        this->updateScaleValue();
+        this->updatePreviewImage();
 
-                // The opacity toolbox must be shown only if switching color of the SAME tool.
-                if (this->lastActiveTool == toolHandler->getActiveTool()) {
-                    this->show();
-                }
-            }
+        // The opacity toolbox must be shown only if switching color of the SAME tool.
+        if (this->lastActiveTool == toolHandler->getActiveTool()) {
+            this->showToolbox();
         }
     } else {
-        if (!partial) {
-            this->hide();
-        }
+        gtk_widget_hide(this->selectedColor.eventBox.widget);
+        this->hideToolbox();
     }
+
     this->lastActiveTool = toolHandler->getActiveTool();
     this->odebug_exit();
 }
@@ -345,8 +342,20 @@ void OpacityPreviewToolbox::updateScaleValue() {
     this->odebug_exit();
 }
 
+static bool inline useBorderForPreview(ToolType tooltype) {
+    switch (tooltype) {
+        case TOOL_PEN:
+            return true;
+        default:
+            return false;
+    }
+}
+
 void OpacityPreviewToolbox::updatePreviewImage() {
     this->odebug_enter("updatePreviewImage");
+
+    bool addBorder = useBorderForPreview(this->theMainWindow->getControl()->getToolHandler()->getToolType());
+
     xoj::util::CairoSurfaceSPtr surface(cairo_image_surface_create(CAIRO_FORMAT_ARGB32, PREVIEW_WIDTH, PREVIEW_HEIGHT),
                                         xoj::util::adopt);
     xoj::util::CairoSPtr cairo(cairo_create(surface.get()), xoj::util::adopt);
@@ -380,15 +389,15 @@ void OpacityPreviewToolbox::updatePreviewImage() {
 }
 OpacityPreviewToolbox::~OpacityPreviewToolbox() = default;
 
-void OpacityPreviewToolbox::show() {
-    this->odebug_enter("show");
+void OpacityPreviewToolbox::showToolbox() {
+    this->odebug_enter("showToolbox");
     gtk_widget_hide(this->opacityPreviewToolbox.widget);  // force showing in new position
     gtk_widget_show_all(this->opacityPreviewToolbox.widget);
     this->odebug_exit();
 }
 
-void OpacityPreviewToolbox::hide() {
-    this->odebug_enter("hide");
+void OpacityPreviewToolbox::hideToolbox() {
+    this->odebug_enter("hideToolbox");
     if (isHidden())
         return;
 
@@ -404,8 +413,9 @@ auto OpacityPreviewToolbox::getOverlayPosition(GtkOverlay* overlay, GtkWidget* w
 
     self->odebug_enter("getOverlayPosition");
 
-    if (self->enabled) {
-        self->update(true);
+    if (self->isEnabled()) {
+        self->updateEventBoxAllocation();
+        self->updateOpacityToolboxAllocation();
 
         if (widget == self->opacityPreviewToolbox.widget) {
             allocation->x = self->opacityPreviewToolbox.allocation.x;

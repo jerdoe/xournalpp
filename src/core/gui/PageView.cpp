@@ -419,9 +419,6 @@ auto XojPageView::onButtonClickEvent(const PositionInputData& pos) -> bool {
     if (h->getToolType() == TOOL_FLOATING_TOOLBOX) {
         this->showFloatingToolbox(pos);
     }
-
-    control->getWindow()->getOpacityPreviewToolbox()->hide();
-
     return true;
 }
 

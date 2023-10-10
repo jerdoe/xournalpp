@@ -30,16 +30,23 @@ public:
     ~OpacityPreviewToolbox();
 
 public:
-    void show();
-    void update(bool partial = false);
-    void hide();
+    void update();
 
 private:
+    /**
+     * Toolbox contains opacity preview image and slider.
+     * It differs from eventbox which is a small invisible
+     * widget positioned over the selected color item
+     * that shows or hides toolbox, when being hovered.
+     */
+    void showToolbox();
+    void hideToolbox();
     void updatePreviewImage();
     void updateSelectedColorItem();
     void updateEventBoxAllocation();
     void updateOpacityToolboxAllocation();
     void updateScaleValue();
+    bool isEnabled();
 
     /// Returns true if the toolbox is currently hidden.
     bool isHidden() const;
@@ -66,9 +73,7 @@ private:
     /// The overlay that the toolbox should be displayed in.
     xoj::util::GObjectSPtr<GtkOverlay> overlay;
 
-    bool enabled = false;
     Color color;
-    bool addBorder;
     Tool* lastActiveTool;
 
     struct {
