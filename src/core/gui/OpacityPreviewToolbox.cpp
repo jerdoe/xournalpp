@@ -195,24 +195,26 @@ bool OpacityPreviewToolbox::isEnabled() {
     return result;
 }
 
+void OpacityPreviewToolbox::updateColor() {
+    this->odebug_enter("updateColor");
+    this->color = theMainWindow->getControl()->getToolHandler()->getColor();
+    this->odebug_exit();
+}
 void OpacityPreviewToolbox::update() {
     this->odebug_enter("update");
 
     ToolHandler* toolHandler = theMainWindow->getControl()->getToolHandler();
-    this->color = toolHandler->getColor();
 
     bool enabled = this->isEnabled();
 
     if (enabled) {
         gtk_widget_show_all(this->selectedColor.eventBox.widget);
 
+        this->updateColor();
         this->updateSelectedColorItem();
 
         this->updateEventBoxAllocation();
         this->updateOpacityToolboxAllocation();
-
-        this->updateScaleValue();
-        this->updatePreviewImage();
 
         // The opacity toolbox must be shown only if switching color of the SAME tool.
         if (this->lastActiveTool == toolHandler->getActiveTool()) {
@@ -391,8 +393,14 @@ OpacityPreviewToolbox::~OpacityPreviewToolbox() = default;
 
 void OpacityPreviewToolbox::showToolbox() {
     this->odebug_enter("showToolbox");
+
+    this->updateColor();
+    this->updateScaleValue();
+    this->updatePreviewImage();
+
     gtk_widget_hide(this->opacityPreviewToolbox.widget);  // force showing in new position
     gtk_widget_show_all(this->opacityPreviewToolbox.widget);
+
     this->odebug_exit();
 }
 

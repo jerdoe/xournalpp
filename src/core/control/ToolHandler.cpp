@@ -300,7 +300,6 @@ void ToolHandler::setSelectPDFTextMarkerOpacity(int alpha) {
     // Use same marker opacity for 'select linear pdf text' or 'select pdf text in rectangle'
     setColorAlpha(this->getTool(TOOL_SELECT_PDF_TEXT_LINEAR), alpha);
     setColorAlpha(this->getTool(TOOL_SELECT_PDF_TEXT_RECT), alpha);
-    this->stateChangeListener->toolColorChanged();
 }
 
 auto ToolHandler::getSelectPDFTextMarkerOpacity() const -> int {

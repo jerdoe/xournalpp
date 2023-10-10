@@ -41,6 +41,7 @@ private:
      */
     void showToolbox();
     void hideToolbox();
+    void updateColor();
     void updatePreviewImage();
     void updateSelectedColorItem();
     void updateEventBoxAllocation();
