@@ -18,6 +18,7 @@
 #include <vector>
 
 #include <glib.h>  // for gboolean
+#include <string.h>
 
 bool ODebuggable::excludes_initialized = false;
 std::vector<std::string> ODebuggable::entered_functions;
@@ -65,14 +66,34 @@ void ODebuggable::odebug(const gchar* log_domain, const gchar* format, ...) {
     va_end(args);
 }
 
+static bool inline endsWithAsterisk(std::string expr) { return expr[expr.length() - 1] == '*'; }
+
 void ODebuggable::odebugv(const gchar* log_domain, const gchar* format, va_list args) {
     if (!excludes_initialized) {
         init_excludes();
     }
 
-    // Iterator over exclusions reached the end without finding full_log_domain
-    // So, full_log_domain is not excluded and log request should be processed..
-    if (excludes.find(log_domain) == excludes.end()) {
+    bool match_exclude = false;
+
+    // Iterate over values passed in ODEBUG_EXCLUDES
+    // until one value matches log_domain
+    for (std::unordered_set<std::string>::iterator it = excludes.begin(); it != excludes.end() && !match_exclude;
+         ++it) {
+        std::string exclude = *it;
+
+        if (endsWithAsterisk(exclude)) {
+            // ODEBUG_EXCLUDES contains here an element of the form <expr*>
+            // if log_domain matches <expr*>, i.e. log_domain starts with <expr>,
+            // this log event should be skipped.
+            match_exclude = strncmp(log_domain, exclude.c_str(), exclude.length() - 1) == 0;
+        } else {
+            // Else, this log event should be skipped
+            // only if 'log_domain' matches exactly 'exclude'
+            match_exclude = strcmp(log_domain, exclude.c_str()) == 0;
+        }
+    }
+
+    if (!match_exclude) {
         g_logv(log_domain, G_LOG_LEVEL_DEBUG, format, args);
     }
 }
