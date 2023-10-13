@@ -69,10 +69,6 @@ void ODebuggable::odebug(const gchar* log_domain, const gchar* format, ...) {
 static bool inline endsWithAsterisk(std::string expr) { return expr[expr.length() - 1] == '*'; }
 
 void ODebuggable::odebugv(const gchar* log_domain, const gchar* format, va_list args) {
-    if (!excludes_initialized) {
-        init_excludes();
-    }
-
     bool match_exclude = false;
 
     // Iterate over values passed in ODEBUG_EXCLUDES
