@@ -75,6 +75,8 @@ private:
     xoj::util::GObjectSPtr<GtkOverlay> overlay;
 
     Color color;
+    Color lastColor;
+
     Tool* lastActiveTool;
 
     struct {

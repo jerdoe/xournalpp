@@ -197,6 +197,7 @@ bool OpacityPreviewToolbox::isEnabled() {
 
 void OpacityPreviewToolbox::updateColor() {
     this->odebug_enter("updateColor");
+    this->lastColor = this->color;
     this->color = theMainWindow->getControl()->getToolHandler()->getColor();
     this->odebug_exit();
 }
@@ -214,7 +215,7 @@ void OpacityPreviewToolbox::update() {
         this->updateOpacityToolboxAllocation();
 
         // The opacity toolbox must be shown only if switching color of the SAME tool.
-        if (this->lastActiveTool == toolHandler->getActiveTool()) {
+        if (this->lastActiveTool == toolHandler->getActiveTool() && this->lastColor != this->color) {
             this->showToolbox();
         }
     } else {
