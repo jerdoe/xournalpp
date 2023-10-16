@@ -228,17 +228,18 @@ void OpacityPreviewToolbox::update() {
 
 void OpacityPreviewToolbox::updateSelectedColorItem() {
     this->odebug_enter("updateSelectedColorItem");
-    const std::vector<ColorToolItem*> colorItems = this->theMainWindow->getToolMenuHandler()->getColorToolItems();
+    const std::vector<std::unique_ptr<ColorToolItem>>& colorItems =
+            this->theMainWindow->getToolMenuHandler()->getColorToolItems();
 
     this->selectedColor.item = nullptr;
 
-    for (const ColorToolItem* colorItem: colorItems) {
+    for (const std::unique_ptr<ColorToolItem>& colorItem: colorItems) {
         // Ignore alpha channel to compare tool color with button color
         Color toolColorMaskAlpha = this->color;
         toolColorMaskAlpha.alpha = 255;
 
-        if (toolColorMaskAlpha == colorItem->getColor()) {
-            this->selectedColor.item = colorItem;
+        if (toolColorMaskAlpha == colorItem.get()->getColor()) {
+            this->selectedColor.item = colorItem.get();
         }
     }
     this->odebug_exit();
