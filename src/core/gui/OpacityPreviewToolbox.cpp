@@ -233,10 +233,11 @@ void OpacityPreviewToolbox::updateSelectedColorItem() {
     this->selectedColor.item = nullptr;
 
     for (const ColorToolItem* colorItem: colorItems) {
-        Color toolColor = this->color;
         // Ignore alpha channel to compare tool color with button color
-        toolColor.alpha = 0;
-        if (toolColor == colorItem->getColor() && colorItem->getToolDisplayName() != "Custom Color") {
+        Color toolColorMaskAlpha = this->color;
+        toolColorMaskAlpha.alpha = 255;
+
+        if (toolColorMaskAlpha == colorItem->getColor()) {
             this->selectedColor.item = colorItem;
         }
     }
