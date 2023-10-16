@@ -210,9 +210,6 @@ void OpacityPreviewToolbox::update() {
     if (enabled) {
         gtk_widget_show_all(this->selectedColor.eventBox.widget);
 
-        this->updateColor();
-        this->updateSelectedColorItem();
-
         this->updateEventBoxAllocation();
         this->updateOpacityToolboxAllocation();
 
@@ -252,6 +249,9 @@ void OpacityPreviewToolbox::updateSelectedColorItem() {
  */
 void OpacityPreviewToolbox::updateEventBoxAllocation() {
     this->odebug_enter("updateEventBoxAllocation");
+
+    this->updateColor();
+    this->updateSelectedColorItem();
 
     if (this->selectedColor.item == nullptr) {
         this->selectedColor.eventBox.allocation.width = 0;
