@@ -96,9 +96,6 @@ private:
         struct {
             GtkWidget* widget;
             GtkAllocation allocation;
-            struct {
-                gdouble x_root, y_root;
-            } lastEventMotion;
         } eventBox;
         const ColorToolItem* item;
     } selectedColor;

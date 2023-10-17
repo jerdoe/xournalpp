@@ -39,8 +39,6 @@ OpacityPreviewToolbox::OpacityPreviewToolbox(MainWindow* theMainWindow, GtkOverl
 
     gtk_widget_add_events(this->selectedColor.eventBox.widget, GDK_POINTER_MOTION_MASK);
     g_signal_connect(this->selectedColor.eventBox.widget, "enter-notify-event", G_CALLBACK(this->enterEventBox), this);
-    g_signal_connect(this->selectedColor.eventBox.widget, "motion-notify-event", G_CALLBACK(this->motionEventBox),
-                     this);
     g_signal_connect(this->selectedColor.eventBox.widget, "leave-notify-event", G_CALLBACK(this->leaveEventBox), this);
 
     g_signal_connect(theMainWindow->get("opacityPreviewToolScaleAlpha"), "change-value", G_CALLBACK(this->changeValue),
@@ -61,20 +59,6 @@ gboolean OpacityPreviewToolbox::enterEventBox(GtkWidget* eventBox, GdkEventCross
                               event->focus);
 
     self->showToolbox();
-
-    self->odebug_exit();
-    return false;
-}
-
-gboolean OpacityPreviewToolbox::motionEventBox(GtkWidget* eventBox, GdkEventMotion* event,
-                                               OpacityPreviewToolbox* self) {
-    self->odebug_enter("motionEventBox");
-
-    self->odebug_current_func("event->x=%f ; event->y=%f ; event->x_root = %f, event->y_root = %f", event->x, event->y,
-                              event->x_root, event->y_root);
-
-    self->selectedColor.eventBox.lastEventMotion.x_root = event->x_root;
-    self->selectedColor.eventBox.lastEventMotion.y_root = event->y_root;
 
     self->odebug_exit();
     return false;
@@ -105,13 +89,12 @@ bool OpacityPreviewToolbox::isPointerOverWidget(gint pointer_x_root, gint pointe
 gboolean OpacityPreviewToolbox::leaveEventBox(GtkWidget* eventBox, GdkEventCrossing* event,
                                               OpacityPreviewToolbox* self) {
     self->odebug_enter("leaveEventBox");
-    self->odebug_current_func("event->detail=%i ; event->mode=%i ; event->focus = %i", event->detail, event->mode,
-                              event->focus);
+    self->odebug_current_func("event->detail=%i ; event->mode=%i ; event->focus = %i ; "
+                              "event->x_root = %f ; event->y_root = %f",
+                              event->detail, event->mode, event->focus, event->x_root, event->y_root);
 
-    if (!OpacityPreviewToolbox::isPointerOverWidget(
-                static_cast<gint>(self->selectedColor.eventBox.lastEventMotion.x_root),
-                static_cast<gint>(self->selectedColor.eventBox.lastEventMotion.y_root),
-                self->opacityPreviewToolbox.widget, self)) {
+    if (!OpacityPreviewToolbox::isPointerOverWidget(static_cast<gint>(event->x_root), static_cast<gint>(event->y_root),
+                                                    self->opacityPreviewToolbox.widget, self)) {
         self->hideToolbox();
     }
     self->odebug_exit();
