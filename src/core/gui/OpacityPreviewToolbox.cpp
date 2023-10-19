@@ -29,17 +29,7 @@ OpacityPreviewToolbox::OpacityPreviewToolbox(MainWindow* theMainWindow, GtkOverl
     gtk_overlay_add_overlay(overlay, this->opacityPreviewToolbox.widget);
     gtk_overlay_set_overlay_pass_through(overlay, this->opacityPreviewToolbox.widget, true);
 
-    this->selectedColor.eventBox.widget = gtk_event_box_new();
-    gtk_widget_set_size_request(this->selectedColor.eventBox.widget, 50, 50);
-
-    gtk_overlay_add_overlay(overlay, this->selectedColor.eventBox.widget);
-    gtk_overlay_set_overlay_pass_through(overlay, this->selectedColor.eventBox.widget, true);
-
     g_signal_connect(overlay, "get-child-position", G_CALLBACK(this->getOverlayPosition), this);
-
-    g_signal_connect(this->selectedColor.eventBox.widget, "enter-notify-event", G_CALLBACK(this->enterEventBox), this);
-    g_signal_connect(this->selectedColor.eventBox.widget, "leave-notify-event", G_CALLBACK(this->leaveEventBox), this);
-
     g_signal_connect(theMainWindow->get("opacityPreviewToolScaleAlpha"), "change-value", G_CALLBACK(this->changeValue),
                      this);
 
@@ -47,17 +37,26 @@ OpacityPreviewToolbox::OpacityPreviewToolbox(MainWindow* theMainWindow, GtkOverl
     g_signal_connect(this->opacityPreviewToolbox.widget, "leave-notify-event", G_CALLBACK(this->leaveOpacityToolbox),
                      this);
 
-    gtk_widget_show_all(this->selectedColor.eventBox.widget);
     this->odebug_exit();
 }
 
-gboolean OpacityPreviewToolbox::enterEventBox(GtkWidget* eventBox, GdkEventCrossing* event,
+std::vector<OpacityPreviewToolbox::EventBox>::iterator OpacityPreviewToolbox::findEventBox(GtkWidget* eventBoxWidget) {
+    auto criteria = [eventBoxWidget](EventBox eventBox) { return eventBox.widget == eventBoxWidget; };
+    return std::find_if(this->eventBoxes.begin(), this->eventBoxes.end(), criteria);
+}
+
+gboolean OpacityPreviewToolbox::enterEventBox(GtkWidget* eventBoxWidget, GdkEventCrossing* event,
                                               OpacityPreviewToolbox* self) {
     self->odebug_enter("enterEventBox");
     self->odebug_current_func("event->detail=%i ; event->mode=%i ; event->focus = %i", event->detail, event->mode,
                               event->focus);
 
-    self->showToolbox();
+    auto result = self->findEventBox(eventBoxWidget);
+
+    if (result != self->eventBoxes.end()) {
+        self->showToolbox();
+        self->updateOpacityToolboxAllocation(*result);
+    }
 
     self->odebug_exit();
     return false;
@@ -183,6 +182,7 @@ void OpacityPreviewToolbox::updateColor() {
     this->color = theMainWindow->getControl()->getToolHandler()->getColor();
     this->odebug_exit();
 }
+
 void OpacityPreviewToolbox::update() {
     this->odebug_enter("update");
 
@@ -191,17 +191,16 @@ void OpacityPreviewToolbox::update() {
     bool enabled = this->isEnabled();
 
     if (enabled) {
-        gtk_widget_show_all(this->selectedColor.eventBox.widget);
-
-        this->updateEventBoxAllocation();
-        this->updateOpacityToolboxAllocation();
+        this->resetEventBoxes();
 
         // The opacity toolbox must be shown only if switching color of the SAME tool.
         if (this->lastActiveTool == toolHandler->getActiveTool() && this->lastColor != this->color) {
             this->showToolbox();
         }
     } else {
-        gtk_widget_hide(this->selectedColor.eventBox.widget);
+        for (EventBox eventBox: this->eventBoxes) {
+            gtk_widget_hide(eventBox.widget);
+        }
         this->hideToolbox();
     }
 
@@ -209,22 +208,55 @@ void OpacityPreviewToolbox::update() {
     this->odebug_exit();
 }
 
-void OpacityPreviewToolbox::updateSelectedColorItem() {
-    this->odebug_enter("updateSelectedColorItem");
+void OpacityPreviewToolbox::resetEventBoxes() {
+    this->odebug_enter("resetEventBoxes");
+    for (EventBox eventBox: this->eventBoxes) {
+        gtk_widget_destroy(eventBox.widget);
+    }
+    this->eventBoxes.clear();
+
+    this->updateColor();
     const std::vector<std::unique_ptr<ColorToolItem>>& colorItems =
             this->theMainWindow->getToolMenuHandler()->getColorToolItems();
 
-    this->selectedColor.item = nullptr;
+    int index = 0;
 
     for (const std::unique_ptr<ColorToolItem>& colorItem: colorItems) {
         // Ignore alpha channel to compare tool color with button color
         Color toolColorMaskAlpha = this->color;
         toolColorMaskAlpha.alpha = 255;
 
+        // For every colorItem matching the current tool color
+        // an EventBox is created and added to the overlay
         if (toolColorMaskAlpha == colorItem.get()->getColor()) {
-            this->selectedColor.item = colorItem.get();
+            EventBox eventBox;
+
+            this->eventBoxes.push_back(eventBox);
+            initEventBox(this->eventBoxes.back(), colorItem.get(), index++);
         }
     }
+    this->odebug_exit();
+}
+
+void OpacityPreviewToolbox::initEventBox(EventBox& eventBox, ColorToolItem* colorItem, int index) {
+    this->odebug_enter("initEventBox");
+    eventBox.item = colorItem;
+    eventBox.widget = gtk_event_box_new();
+
+    std::string widget_name = "OpacityEventBox" + std::to_string(index);
+    gtk_widget_set_name(eventBox.widget, widget_name.c_str());
+
+    gtk_widget_set_size_request(eventBox.widget, 50, 50);
+
+    gtk_overlay_add_overlay(this->overlay.get(), eventBox.widget);
+    gtk_overlay_set_overlay_pass_through(this->overlay.get(), eventBox.widget, true);
+
+    g_signal_connect(eventBox.widget, "enter-notify-event", G_CALLBACK(this->enterEventBox), this);
+    g_signal_connect(eventBox.widget, "leave-notify-event", G_CALLBACK(this->leaveEventBox), this);
+
+    gtk_widget_show_all(eventBox.widget);
+
+    this->updateEventBoxAllocation(eventBox);
     this->odebug_exit();
 }
 
@@ -232,49 +264,29 @@ void OpacityPreviewToolbox::updateSelectedColorItem() {
  * Adjust size and position of the eventbox
  * to match those of the selected ColorToolItem
  */
-void OpacityPreviewToolbox::updateEventBoxAllocation() {
+void OpacityPreviewToolbox::updateEventBoxAllocation(EventBox& eventBox) {
     this->odebug_enter("updateEventBoxAllocation");
 
-    this->updateColor();
-    this->updateSelectedColorItem();
+    GtkWidget* selectedColorWidget = GTK_WIDGET(eventBox.item->getItem());
+    GtkWidget* overlayWidget = GTK_WIDGET(overlay.get());
 
-    if (this->selectedColor.item == nullptr) {
-        this->selectedColor.eventBox.allocation.width = 0;
-        this->selectedColor.eventBox.allocation.height = 0;
-        this->selectedColor.eventBox.allocation.x = 0;
-        this->selectedColor.eventBox.allocation.y = 0;
-    } else {
-        GtkWidget* selectedColorWidget = GTK_WIDGET(this->selectedColor.item->getItem());
-        GtkWidget* overlayWidget = GTK_WIDGET(overlay.get());
+    eventBox.allocation.width = gtk_widget_get_allocated_width(selectedColorWidget);
+    eventBox.allocation.height = gtk_widget_get_allocated_height(selectedColorWidget);
 
-        this->selectedColor.eventBox.allocation.width = gtk_widget_get_allocated_width(selectedColorWidget);
-        this->selectedColor.eventBox.allocation.height = gtk_widget_get_allocated_height(selectedColorWidget);
-
-        // Copy coordinates of selectedColorWidget
-        // in selectedColor.eventBox.allocation.x and selectedColor.eventBox.allocation.y
-        // using overlay's coordinate space
-        gtk_widget_translate_coordinates(selectedColorWidget, overlayWidget, 0, 0,
-                                         &this->selectedColor.eventBox.allocation.x,
-                                         &this->selectedColor.eventBox.allocation.y);
-    }
+    // Copy coordinates of selectedColorWidget
+    // in eventBox.allocation.x and eventBox.allocation.y
+    // using overlay's coordinate space
+    gtk_widget_translate_coordinates(selectedColorWidget, overlayWidget, 0, 0, &eventBox.allocation.x,
+                                     &eventBox.allocation.y);
 
     this->odebug_current_func("allocation.x=%i, allocation.y=%i, allocation.width=%i, allocation.height=%i",
-                              this->selectedColor.eventBox.allocation.x, this->selectedColor.eventBox.allocation.y,
-                              this->selectedColor.eventBox.allocation.width,
-                              this->selectedColor.eventBox.allocation.height);
+                              eventBox.allocation.x, eventBox.allocation.y, eventBox.allocation.width,
+                              eventBox.allocation.height);
     this->odebug_exit();
 }
 
-/**
- * Position the opacity toolbox below the selected ColorToolItem
- * and align their centers vertically.
- */
-void OpacityPreviewToolbox::updateOpacityToolboxAllocation() {
-    this->odebug_enter("updateOpacityToolboxAllocation");
-    // Below the color button
-    // At this time, eventbox allocation matches with those of the selected ColorToolItem
-    this->opacityPreviewToolbox.allocation.y =
-            this->selectedColor.eventBox.allocation.y + this->selectedColor.eventBox.allocation.height;
+void OpacityPreviewToolbox::updateOpacityToolboxSizeAllocation() {
+    this->odebug_enter("updateOpacityToolboxSizeAllocation");
 
     // Get existing width and height
     GtkRequisition natural;
@@ -286,28 +298,47 @@ void OpacityPreviewToolbox::updateOpacityToolboxAllocation() {
     this->opacityPreviewToolbox.allocation.width = natural.width;
     this->opacityPreviewToolbox.allocation.height = natural.height;
 
+    this->odebug_exit();
+}
+
+/**
+ * Position the opacity toolbox below the selected ColorToolItem
+ * and align their centers vertically.
+ */
+void OpacityPreviewToolbox::updateOpacityToolboxAllocation(EventBox eventBox) {
+    this->odebug_enter("updateOpacityToolboxAllocation");
+
+    // Below the color button
+    // At this time, eventbox allocation matches with those of the selected ColorToolItem
+    this->opacityPreviewToolbox.allocation.y = eventBox.allocation.y + eventBox.allocation.height;
+
+    this->updateOpacityToolboxSizeAllocation();
+
     // Make sure the "OpacityPreviewToolbox" is fully displayed.
     //        const int gap = 5;
     const int gap = 0;
 
-    // Calculate offset_x needed so that the center is vertically with the selected color item.
-    int offset_x = static_cast<int>(std::round((this->selectedColor.eventBox.allocation.width - natural.width) / 2));
+    int toolbox_width = this->opacityPreviewToolbox.allocation.width;
+    int toolbox_height = this->opacityPreviewToolbox.allocation.height;
 
-    int adjusted_position_x = this->selectedColor.eventBox.allocation.x + offset_x;
+    // Calculate offset_x needed so that the center is vertically with the selected color item.
+    int offset_x = static_cast<int>(std::round(eventBox.allocation.width - toolbox_width) / 2);
+
+    int adjusted_position_x = eventBox.allocation.x + offset_x;
 
     // If the toolbox will go out of the window, then we'll flip the corresponding directions.
     GtkAllocation windowAlloc{};
     gtk_widget_get_allocation(GTK_WIDGET(overlay.get()), &windowAlloc);
 
-    bool rightOK = adjusted_position_x + natural.width + gap <= windowAlloc.width;
-    bool bottomOK = this->opacityPreviewToolbox.allocation.y + natural.height + gap <= windowAlloc.height;
+    bool rightOK = adjusted_position_x + toolbox_width + gap <= windowAlloc.width;
+    bool bottomOK = this->opacityPreviewToolbox.allocation.y + toolbox_height + gap <= windowAlloc.height;
 
     this->opacityPreviewToolbox.allocation.x =
-            rightOK ? adjusted_position_x + gap : adjusted_position_x - natural.width - gap;
+            rightOK ? adjusted_position_x + gap : adjusted_position_x - toolbox_width - gap;
 
     this->opacityPreviewToolbox.allocation.y = bottomOK ?
                                                        this->opacityPreviewToolbox.allocation.y + gap :
-                                                       this->opacityPreviewToolbox.allocation.y - natural.height - gap;
+                                                       this->opacityPreviewToolbox.allocation.y - toolbox_height - gap;
 
     // Ensure an overlap between selected ColorToolItem and opacityPreviewToolbox
     // for handling the "notify-leave-event" signal.
@@ -319,6 +350,7 @@ void OpacityPreviewToolbox::updateOpacityToolboxAllocation() {
                               this->opacityPreviewToolbox.allocation.x, this->opacityPreviewToolbox.allocation.y,
                               this->opacityPreviewToolbox.allocation.width,
                               this->opacityPreviewToolbox.allocation.height);
+
     this->odebug_exit();
 }
 
@@ -400,45 +432,59 @@ void OpacityPreviewToolbox::hideToolbox() {
 
 auto OpacityPreviewToolbox::getOverlayPosition(GtkOverlay* overlay, GtkWidget* widget, GdkRectangle* allocation,
                                                OpacityPreviewToolbox* self) -> gboolean {
-    if (widget != self->opacityPreviewToolbox.widget && widget != self->selectedColor.eventBox.widget) {
+    // Find if widget to be positioned is an eventbox
+    // to be overlaid over a ColorToolItem.
+    auto eventBoxIterator = self->findEventBox(widget);
+
+    // Ignore widgets that are neither the opacity toolbox
+    // or the eventboxes to be positioned over ColorToolItems
+    if (widget != self->opacityPreviewToolbox.widget && eventBoxIterator == self->eventBoxes.end()) {
         return false;
     }
 
     self->odebug_enter("getOverlayPosition");
-
     if (self->isEnabled()) {
-        self->updateEventBoxAllocation();
-        self->updateOpacityToolboxAllocation();
-
         if (widget == self->opacityPreviewToolbox.widget) {
+            self->updateOpacityToolboxSizeAllocation();
+
             allocation->x = self->opacityPreviewToolbox.allocation.x;
             allocation->y = self->opacityPreviewToolbox.allocation.y;
             allocation->width = self->opacityPreviewToolbox.allocation.width;
             allocation->height = self->opacityPreviewToolbox.allocation.height;
-        } else if (widget == self->selectedColor.eventBox.widget) {
-            allocation->x = self->selectedColor.eventBox.allocation.x;
-            allocation->y = self->selectedColor.eventBox.allocation.y;
-            allocation->width = self->selectedColor.eventBox.allocation.width;
-            allocation->height = self->selectedColor.eventBox.allocation.height;
+        } else {
+            EventBox& eventBox = *eventBoxIterator;
+            self->updateEventBoxAllocation(eventBox);
+
+            allocation->x = eventBox.allocation.x;
+            allocation->y = eventBox.allocation.y;
+            allocation->width = eventBox.allocation.width;
+            allocation->height = eventBox.allocation.height;
         }
+        self->odebug_current_func("widget_name='%s' ; "
+                                  "allocation->x ='%i' ; allocation->y='%i' ; "
+                                  "allocation->width='%i' ; allocation->height='%i'",
+                                  gtk_widget_get_name(widget), allocation->x, allocation->y, allocation->width,
+                                  allocation->height);
+
+        self->odebug_exit();
+        return true;
     } else {
-        allocation->width = gtk_widget_get_allocated_width(widget);
-        allocation->height = gtk_widget_get_allocated_height(widget);
+        // Todo : Remove after making sure the conditional-block might not be useful in certain cases.
+        if (false) {
+            allocation->width = gtk_widget_get_allocated_width(widget);
+            allocation->height = gtk_widget_get_allocated_height(widget);
 
-        // Copy coordinates of selectedColorWidget
-        // in selectedColor.eventBox.allocation.x and selectedColor.eventBox.allocation.y
-        // using overlay's coordinate space
-        gtk_widget_translate_coordinates(widget, GTK_WIDGET(overlay), 0, 0, &allocation->x, &allocation->y);
+            // Copy coordinates of selectedColorWidget
+            // in selectedColor.eventBox.allocation.x and selectedColor.eventBox.allocation.y
+            // using overlay's coordinate space
+            gtk_widget_translate_coordinates(widget, GTK_WIDGET(overlay), 0, 0, &allocation->x, &allocation->y);
+
+            self->odebug_exit();
+            return true;
+        }
+        self->odebug_exit();
+        return false;
     }
-
-    self->odebug_current_func("widget_name='%s' ; "
-                              "allocation->x ='%i' ; allocation->y='%i' ; "
-                              "allocation->width='%i' ; allocation->height='%i'",
-                              gtk_widget_get_name(widget), allocation->x, allocation->y, allocation->width,
-                              allocation->height);
-
-    self->odebug_exit();
-    return true;
 }
 
 bool OpacityPreviewToolbox::isHidden() const { return !gtk_widget_is_visible(this->opacityPreviewToolbox.widget); }

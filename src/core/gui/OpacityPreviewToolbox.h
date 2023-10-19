@@ -44,10 +44,10 @@ private:
     void updateColor();
     void updatePreviewImage();
     void updateSelectedColorItem();
-    void updateEventBoxAllocation();
-    void updateOpacityToolboxAllocation();
     void updateScaleValue();
     bool isEnabled();
+
+    void resetEventBoxes();
 
     /// Returns true if the toolbox is currently hidden.
     bool isHidden() const;
@@ -81,7 +81,7 @@ private:
         GtkAllocation allocation;
     } opacityPreviewToolbox;
 
-    struct {
+    struct EventBox {
         // The purpose of this small GtkEventBox is to detect when the mouse enters or leaves
         // the area of the selected ColorToolItem. While it may be possible to directly implement
         // a leave/enter signal handler in the ColorToolItem itself, doing so would require establishing
@@ -90,10 +90,18 @@ private:
         // By using this GtkEventBox, we can centralize the handling of mouse enter/leave
         // events in one place. This simplifies the code and avoids the need for extra
         // signal connections for each ColorToolItem.
-        struct {
-            GtkWidget* widget;
-            GtkAllocation allocation;
-        } eventBox;
+        GtkWidget* widget;
+        GtkAllocation allocation;
         const ColorToolItem* item;
-    } selectedColor;
+    };
+
+    // The selected color can be represented by several ColorToolItems on different toolbars.
+    // An EventBox must be created for each ColorToolItem of the selected color.
+    std::vector<EventBox> eventBoxes;
+
+    void initEventBox(EventBox& eventBox, ColorToolItem* colorItem, int index);
+    void updateEventBoxAllocation(EventBox& eventBox);
+    void updateOpacityToolboxSizeAllocation();
+    void updateOpacityToolboxAllocation(EventBox eventBox);
+    std::vector<OpacityPreviewToolbox::EventBox>::iterator findEventBox(GtkWidget* eventBoxWidget);
 };

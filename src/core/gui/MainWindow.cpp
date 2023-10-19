@@ -468,6 +468,7 @@ void MainWindow::loadToolbar(ToolbarData* d) {
     }
 
     this->floatingToolbox->flagRecalculateSizeRequired();
+    this->opacityPreviewToolBox->update();
 }
 
 auto MainWindow::getSelectedToolbar() const -> ToolbarData* { return this->selectedToolbar; }
