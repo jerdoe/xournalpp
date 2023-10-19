@@ -37,7 +37,6 @@ OpacityPreviewToolbox::OpacityPreviewToolbox(MainWindow* theMainWindow, GtkOverl
 
     g_signal_connect(overlay, "get-child-position", G_CALLBACK(this->getOverlayPosition), this);
 
-    gtk_widget_add_events(this->selectedColor.eventBox.widget, GDK_POINTER_MOTION_MASK);
     g_signal_connect(this->selectedColor.eventBox.widget, "enter-notify-event", G_CALLBACK(this->enterEventBox), this);
     g_signal_connect(this->selectedColor.eventBox.widget, "leave-notify-event", G_CALLBACK(this->leaveEventBox), this);
 

@@ -59,12 +59,9 @@ private:
 
     static gboolean leaveOpacityToolbox(GtkWidget* opacityToolbox, GdkEventCrossing* event,
                                         OpacityPreviewToolbox* self);
-    static gboolean motionOpacityToolbox(GtkWidget* opacityToolbox, GdkEventMotion* event, OpacityPreviewToolbox* self);
-
 
     static gboolean enterEventBox(GtkWidget* eventBox, GdkEventCrossing* event, OpacityPreviewToolbox* self);
     static gboolean leaveEventBox(GtkWidget* eventBox, GdkEventCrossing* event, OpacityPreviewToolbox* self);
-    static gboolean motionEventBox(GtkWidget* eventBox, GdkEventMotion* event, OpacityPreviewToolbox* self);
     static bool isPointerOverWidget(gint pointer_x_root, gint pointer_y_root, GtkWidget* widget,
                                     OpacityPreviewToolbox* self);
 
