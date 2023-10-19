@@ -66,7 +66,9 @@ bool OpacityPreviewToolbox::isPointerOverWidget(gint pointer_x_root, gint pointe
                                                 OpacityPreviewToolbox* self) {
     self->odebug_enter("isPointerOverWidget");
     gint widget_x_root, widget_y_root;
-    gdk_window_get_origin(gtk_widget_get_window(widget), &widget_x_root, &widget_y_root);
+    if (GDK_IS_WINDOW(gtk_widget_get_window(widget))) {
+        gdk_window_get_origin(gtk_widget_get_window(widget), &widget_x_root, &widget_y_root);
+    }
 
     gint widget_height = gtk_widget_get_allocated_height(widget);
     gint widget_width = gtk_widget_get_allocated_width(widget);
