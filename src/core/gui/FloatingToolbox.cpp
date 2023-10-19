@@ -180,7 +180,7 @@ auto FloatingToolbox::getOverlayPosition(GtkOverlay* overlay, GtkWidget* widget,
 
 void FloatingToolbox::handleLeaveFloatingToolbox(GtkWidget* floatingToolbox, GdkEvent* event, FloatingToolbox* self) {
     if (floatingToolbox == self->floatingToolbox) {
-        if (self->floatingToolboxState != configuration) {
+        if (self->floatingToolboxState != configuration && event->crossing.detail == GDK_NOTIFY_NONLINEAR) {
             self->hide();
         }
     }
