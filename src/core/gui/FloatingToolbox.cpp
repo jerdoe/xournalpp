@@ -13,6 +13,7 @@
 #include "control/settings/SettingsEnums.h"  // for BUTTON_COUNT
 
 #include "MainWindow.h"          // for MainWindow
+#include "OpacityPreviewToolbox.h"
 #include "ToolbarDefinitions.h"  // for ToolbarEntryDefintion
 
 
@@ -110,10 +111,12 @@ void FloatingToolbox::show() {
 
     if (this->floatingToolboxState != configuration) {
         gtk_widget_hide(this->mainWindow->get("labelFloatingToolbox"));
+        this->mainWindow->getOpacityPreviewToolbox()->showEventBoxesInFloatingToolBox();
     }
 
     if (this->floatingToolboxState == configuration || countWidgets() > 0) {
         gtk_widget_hide(this->mainWindow->get("showIfEmpty"));
+        this->mainWindow->getOpacityPreviewToolbox()->hideEventBoxesInFloatingToolBox();
     }
 }
 
@@ -124,6 +127,7 @@ void FloatingToolbox::hide() {
     }
 
     gtk_widget_hide(this->floatingToolbox);
+    this->mainWindow->getOpacityPreviewToolbox()->hideEventBoxesInFloatingToolBox();
 }
 
 

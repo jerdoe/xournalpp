@@ -14,6 +14,7 @@
 #include "util/raii/CairoWrappers.h"
 #include "util/raii/GObjectSPtr.h"
 
+#include "FloatingToolbox.h"
 #include "MainWindow.h"  // for MainWindow
 
 
@@ -210,6 +211,43 @@ void OpacityPreviewToolbox::update() {
     this->odebug_exit();
 }
 
+void OpacityPreviewToolbox::hideEventBoxesInFloatingToolBox() {
+    for (EventBox eventBox: this->eventBoxes) {
+        if (eventBox.inFloatingToolbox == true) {
+            gtk_widget_hide(eventBox.widget);
+        }
+    }
+}
+
+void OpacityPreviewToolbox::showEventBoxesInFloatingToolBox() {
+    for (EventBox eventBox: this->eventBoxes) {
+        if (eventBox.inFloatingToolbox == true) {
+            gtk_widget_hide(eventBox.widget);
+            gtk_widget_show_all(eventBox.widget);
+        }
+    }
+}
+
+static bool inline isAncestor(GtkWidget* ancestor, GtkWidget* child, OpacityPreviewToolbox* self) {
+    self->odebug_enter("isAncestor");
+    GtkWidget* it = child;
+
+    while (it != nullptr) {
+        self->odebug_current_func("ancestor = %s:%p ; child.name = %s:%p ; it.name = %s:%p",
+                                  gtk_widget_get_name(ancestor), (void*)ancestor, gtk_widget_get_name(child),
+                                  (void*)child, gtk_widget_get_name(it), (void*)it);
+        if (it == ancestor) {
+            self->odebug_current_func("return true");
+            self->odebug_exit();
+            return true;
+        }
+        it = gtk_widget_get_parent(it);
+    }
+    self->odebug_current_func("return false");
+    self->odebug_exit();
+    return false;
+}
+
 void OpacityPreviewToolbox::resetEventBoxes() {
     this->odebug_enter("resetEventBoxes");
     for (EventBox eventBox: this->eventBoxes) {
@@ -223,6 +261,8 @@ void OpacityPreviewToolbox::resetEventBoxes() {
 
     int index = 0;
 
+    GtkWidget* floatingToolbox = this->theMainWindow->getFloatingToolbox()->floatingToolbox;
+
     for (const std::unique_ptr<ColorToolItem>& colorItem: colorItems) {
         // Ignore alpha channel to compare tool color with button color
         Color toolColorMaskAlpha = this->color;
@@ -232,9 +272,13 @@ void OpacityPreviewToolbox::resetEventBoxes() {
         // an EventBox is created and added to the overlay
         if (toolColorMaskAlpha == colorItem.get()->getColor()) {
             EventBox eventBox;
-
             this->eventBoxes.push_back(eventBox);
-            initEventBox(this->eventBoxes.back(), colorItem.get(), index++);
+
+            EventBox& refEventBox = this->eventBoxes.back();
+
+            initEventBox(refEventBox, colorItem.get(), index++);
+
+            refEventBox.inFloatingToolbox = isAncestor(floatingToolbox, refEventBox.item->getItem(), this);
         }
     }
 

@@ -17,9 +17,11 @@
 #include "util/ODebug.h"            // for ODebuggable
 #include "util/raii/GObjectSPtr.h"  // for GObjectSPtr
 
+#include "FloatingToolbox.h"
+
 class MainWindow;
 
-class OpacityPreviewToolbox: ODebuggable {
+class OpacityPreviewToolbox: public ODebuggable {
 
 public:
     OpacityPreviewToolbox(MainWindow* theMainWindow, GtkOverlay* overlay);
@@ -93,6 +95,7 @@ private:
         GtkWidget* widget;
         GtkAllocation allocation;
         const ColorToolItem* item;
+        bool inFloatingToolbox;
     };
 
     // The selected color can be represented by several ColorToolItems on different toolbars.
@@ -104,4 +107,11 @@ private:
     void updateOpacityToolboxSizeAllocation();
     void updateOpacityToolboxAllocation(EventBox eventBox);
     std::vector<OpacityPreviewToolbox::EventBox>::iterator findEventBox(GtkWidget* eventBoxWidget);
+
+public:
+    friend class FloatingToolbox;
+
+private:
+    void hideEventBoxesInFloatingToolBox();
+    void showEventBoxesInFloatingToolBox();
 };
