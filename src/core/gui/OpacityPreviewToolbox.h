@@ -78,11 +78,6 @@ private:
 
     Tool* lastActiveTool;
 
-    struct {
-        GtkWidget* widget;
-        GtkAllocation allocation;
-    } opacityPreviewToolbox;
-
     struct EventBox {
         // The purpose of this small GtkEventBox is to detect when the mouse enters or leaves
         // the area of the selected ColorToolItem. While it may be possible to directly implement
@@ -101,6 +96,14 @@ private:
     // The selected color can be represented by several ColorToolItems on different toolbars.
     // An EventBox must be created for each ColorToolItem of the selected color.
     std::vector<EventBox> eventBoxes;
+
+    struct {
+        GtkWidget* widget;
+        GtkAllocation allocation;
+
+        // The eventBox that is currently in use to show/hide the opacity toolbox
+        std::vector<OpacityPreviewToolbox::EventBox>::iterator eventBox;
+    } opacityPreviewToolbox;
 
     void initEventBox(EventBox& eventBox, ColorToolItem* colorItem, int index);
     void updateEventBoxAllocation(EventBox& eventBox);

@@ -57,6 +57,7 @@ gboolean OpacityPreviewToolbox::enterEventBox(GtkWidget* eventBoxWidget, GdkEven
     if (result != self->eventBoxes.end()) {
         self->showToolbox();
         self->updateOpacityToolboxAllocation(*result);
+        self->opacityPreviewToolbox.eventBox = result;
     }
 
     self->odebug_exit();
@@ -146,6 +147,13 @@ gboolean OpacityPreviewToolbox::leaveOpacityToolbox(GtkWidget* opacityToolbox, G
                 toolHandler->setColor(self->color, false);
                 break;
         }
+
+        FloatingToolbox* oFloatingToolbox = self->theMainWindow->getFloatingToolbox();
+        if (!isPointerOverWidget(static_cast<int>(event->x_root), static_cast<int>(event->y_root),
+                                 oFloatingToolbox->floatingToolbox, self)) {
+            oFloatingToolbox->hide();
+        }
+
         self->hideToolbox();
     }
     self->odebug_exit();
@@ -254,6 +262,7 @@ void OpacityPreviewToolbox::resetEventBoxes() {
         gtk_widget_destroy(eventBox.widget);
     }
     this->eventBoxes.clear();
+    this->opacityPreviewToolbox.eventBox = this->eventBoxes.end();
 
     this->updateColor();
     const std::vector<std::unique_ptr<ColorToolItem>>& colorItems =
