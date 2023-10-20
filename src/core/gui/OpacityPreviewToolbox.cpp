@@ -237,6 +237,8 @@ void OpacityPreviewToolbox::resetEventBoxes() {
             initEventBox(this->eventBoxes.back(), colorItem.get(), index++);
         }
     }
+
+    gtk_overlay_reorder_overlay(this->overlay.get(), this->opacityPreviewToolbox.widget, -1);
     this->odebug_exit();
 }
 
