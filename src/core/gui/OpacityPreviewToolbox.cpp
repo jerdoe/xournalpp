@@ -606,19 +606,6 @@ auto OpacityPreviewToolbox::getOverlayPosition(GtkOverlay* overlay, GtkWidget* w
         self->odebug_exit();
         return true;
     } else {
-        // Todo : Remove after making sure the conditional-block might not be useful in certain cases.
-        if (false) {
-            allocation->width = gtk_widget_get_allocated_width(widget);
-            allocation->height = gtk_widget_get_allocated_height(widget);
-
-            // Copy coordinates of selectedColorWidget
-            // in selectedColor.eventBox.allocation.x and selectedColor.eventBox.allocation.y
-            // using overlay's coordinate space
-            gtk_widget_translate_coordinates(widget, GTK_WIDGET(overlay), 0, 0, &allocation->x, &allocation->y);
-
-            self->odebug_exit();
-            return true;
-        }
         self->odebug_exit();
         return false;
     }
