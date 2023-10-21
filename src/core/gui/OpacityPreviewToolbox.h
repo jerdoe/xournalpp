@@ -74,9 +74,6 @@ private:
     xoj::util::GObjectSPtr<GtkOverlay> overlay;
 
     Color color;
-    Color lastColor;
-
-    Tool* lastActiveTool;
 
     struct EventBox {
         // The purpose of this small GtkEventBox is to detect when the mouse enters or leaves
