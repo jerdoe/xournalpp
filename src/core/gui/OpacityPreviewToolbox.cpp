@@ -154,6 +154,12 @@ gboolean OpacityPreviewToolbox::leaveOpacityToolbox(GtkWidget* opacityToolbox, G
             case TOOL_SELECT_PDF_TEXT_LINEAR:
                 toolHandler->setSelectPDFTextMarkerOpacity(self->color.alpha);
                 break;
+            case TOOL_PEN:
+                toolHandler->setPenFill(self->color.alpha);
+                break;
+            case TOOL_HIGHLIGHTER:
+                toolHandler->setHighlighterFill(self->color.alpha);
+                break;
             default:
                 toolHandler->setColor(self->color, false);
                 break;
@@ -185,6 +191,11 @@ bool OpacityPreviewToolbox::isEnabled() {
 
     switch (toolHandler->getToolType()) {
         case TOOL_PEN:
+            result = toolHandler->getPenFillEnabled() ? true : false;
+            break;
+        case TOOL_HIGHLIGHTER:
+            result = toolHandler->getHighlighterFillEnabled() ? true : false;
+            break;
         case TOOL_SELECT_PDF_TEXT_RECT:
         case TOOL_SELECT_PDF_TEXT_LINEAR:
             result = true;
@@ -201,6 +212,20 @@ bool OpacityPreviewToolbox::isEnabled() {
 void OpacityPreviewToolbox::updateColor() {
     this->odebug_enter("updateColor");
     this->color = theMainWindow->getControl()->getToolHandler()->getColor();
+    ToolHandler* toolHandler = this->theMainWindow->getControl()->getToolHandler();
+
+    ToolType tooltype = toolHandler->getToolType();
+
+    switch (tooltype) {
+        case TOOL_PEN:
+            this->color.alpha = static_cast<uint8_t>(toolHandler->getPenFill());
+            break;
+        case TOOL_HIGHLIGHTER:
+            this->color.alpha = static_cast<uint8_t>(toolHandler->getHighlighterFill());
+            break;
+        default:
+            break;
+    }
     this->odebug_exit();
 }
 

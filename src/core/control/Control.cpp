@@ -1135,6 +1135,9 @@ void Control::toolFillChanged() {
     this->actionDB->setActionState(Action::TOOL_FILL, toolHandler->getFill() != -1);
     this->actionDB->setActionState(Action::TOOL_PEN_FILL, toolHandler->getPenFillEnabled());
     this->actionDB->setActionState(Action::TOOL_HIGHLIGHTER_FILL, toolHandler->getHighlighterFillEnabled());
+    if (win) {
+        win->getOpacityPreviewToolbox()->update();
+    }
 }
 
 void Control::toolLineStyleChanged() {
