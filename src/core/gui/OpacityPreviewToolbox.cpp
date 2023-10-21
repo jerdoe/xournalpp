@@ -399,49 +399,10 @@ void OpacityPreviewToolbox::updateOpacityToolboxAllocation(EventBox eventBox) {
         OVERLAP_OFFSET_VALUE = 15;
     }
 
-    int overlap_offset_x = 0;
-    int overlap_offset_y = 0;
-
-    if (isColorItemTooFarLeft || isColorItemTooFarRight) {
-        if (isColorItemTooFarLeft) {
-            // Position the opacity toolbox to the right of the ColorToolItem
-            this->opacityPreviewToolbox.allocation.x = eventBox.allocation.x + eventBox.allocation.width;
-            overlap_offset_x = -OVERLAP_OFFSET_VALUE;
-        }
-
-        if (isColorItemTooFarRight) {
-            // Position the opacity toolbox to the left of the ColorToolItem
-            this->opacityPreviewToolbox.allocation.x = eventBox.allocation.x - toolbox_width;
-            overlap_offset_x = OVERLAP_OFFSET_VALUE;
-        }
-
-        if (!isColorItemTooFarBottom) {
-            // Centers horizontally the opacity toolbox with the selected ColorToolItem
-            int offset_y = static_cast<int>(std::round(eventBox.allocation.height - toolbox_height) / 2);
-            this->opacityPreviewToolbox.allocation.y = eventBox.allocation.y + offset_y;
-        } else {
-            // Position the opacity toolbox to the top of the ColorToolItem
-            this->opacityPreviewToolbox.allocation.y = eventBox.allocation.y - toolbox_height;
-            overlap_offset_y = OVERLAP_OFFSET_VALUE;
-        }
-    } else {
-        // Centers vertically the opacity toolbox with the selected ColorToolItem
-        int offset_x = static_cast<int>(std::round(eventBox.allocation.width - toolbox_width) / 2);
-        this->opacityPreviewToolbox.allocation.x = eventBox.allocation.x + offset_x;
-
-        if (!isColorItemTooFarBottom) {
-            // Position the opacity toolbox below the ColorToolIltem
-            this->opacityPreviewToolbox.allocation.y = eventBox.allocation.y + eventBox.allocation.height;
-            overlap_offset_y = -OVERLAP_OFFSET_VALUE;
-        } else {
-            // Position the opacity toolbox to the top of the ColorToolItem
-            this->opacityPreviewToolbox.allocation.y = eventBox.allocation.y - toolbox_height;
-            overlap_offset_y = OVERLAP_OFFSET_VALUE;
-        }
-    }
-
-    this->opacityPreviewToolbox.allocation.x += overlap_offset_x;
-    this->opacityPreviewToolbox.allocation.y += overlap_offset_y;
+    this->updateOpacityToolboxAllocationX(eventBox, toolbox_width, isColorItemTooFarLeft, isColorItemTooFarRight,
+                                          OVERLAP_OFFSET_VALUE);
+    this->updateOpacityToolboxAllocationY(eventBox, toolbox_height, isColorItemTooFarLeft, isColorItemTooFarRight,
+                                          isColorItemTooFarBottom, OVERLAP_OFFSET_VALUE);
 
     this->odebug_current_func("allocation.x=%i, allocation.y=%i, allocation.width=%i, allocation.height=%i",
                               this->opacityPreviewToolbox.allocation.x, this->opacityPreviewToolbox.allocation.y,
@@ -449,6 +410,61 @@ void OpacityPreviewToolbox::updateOpacityToolboxAllocation(EventBox eventBox) {
                               this->opacityPreviewToolbox.allocation.height);
 
     this->odebug_exit();
+}
+
+/**
+ * Adjust the horizontal position of the opacity toolbox so that it sits on the right, on the left
+ * or is vertically centered with the selected color item, in a manner that makes it fully visible.
+ */
+void OpacityPreviewToolbox::updateOpacityToolboxAllocationX(EventBox& eventBox, const int toolbox_width,
+                                                            const bool isColorItemTooFarLeft,
+                                                            const bool isColorItemTooFarRight,
+                                                            const int overlap_offset_value) {
+    int overlap_offset_x = 0;
+
+    if (isColorItemTooFarLeft) {
+        // Position the opacity toolbox to the right of the ColorToolItem
+        this->opacityPreviewToolbox.allocation.x = eventBox.allocation.x + eventBox.allocation.width;
+        overlap_offset_x = -overlap_offset_value;
+    } else if (isColorItemTooFarRight) {
+        // Position the opacity toolbox to the left of the ColorToolItem
+        this->opacityPreviewToolbox.allocation.x = eventBox.allocation.x - toolbox_width;
+        overlap_offset_x = overlap_offset_value;
+    } else {
+        // Centers vertically the opacity toolbox with the selected ColorToolItem
+        int offset_x = static_cast<int>(std::round(eventBox.allocation.width - toolbox_width) / 2);
+        this->opacityPreviewToolbox.allocation.x = eventBox.allocation.x + offset_x;
+    }
+
+    this->opacityPreviewToolbox.allocation.x += overlap_offset_x;
+}
+
+/**
+ * Adjust the vertical position of the opacity toolbox so that it sits below, above or
+ * horizontally centered with the selected color item, in a manner that makes it fully visible.
+ */
+void OpacityPreviewToolbox::updateOpacityToolboxAllocationY(EventBox& eventBox, const int toolbox_height,
+                                                            const bool isColorItemTooFarLeft,
+                                                            const bool isColorItemTooFarRight,
+                                                            const bool isColorItemTooFarBottom,
+                                                            const int overlap_offset_value) {
+    int overlap_offset_y = 0;
+
+    if (isColorItemTooFarBottom) {
+        // Position the opacity toolbox to the top of the ColorToolItem
+        this->opacityPreviewToolbox.allocation.y = eventBox.allocation.y - toolbox_height;
+        overlap_offset_y = overlap_offset_value;
+    } else if (isColorItemTooFarLeft || isColorItemTooFarRight) {
+        // Centers horizontally the opacity toolbox with the selected ColorToolItem
+        int offset_y = static_cast<int>(std::round(eventBox.allocation.height - toolbox_height) / 2);
+        this->opacityPreviewToolbox.allocation.y = eventBox.allocation.y + offset_y;
+    } else {
+        // Position the opacity toolbox below the ColorToolIltem
+        this->opacityPreviewToolbox.allocation.y = eventBox.allocation.y + eventBox.allocation.height;
+        overlap_offset_y = -overlap_offset_value;
+    }
+
+    this->opacityPreviewToolbox.allocation.y += overlap_offset_y;
 }
 
 void OpacityPreviewToolbox::updateScaleValue() {

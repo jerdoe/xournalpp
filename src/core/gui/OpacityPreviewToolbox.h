@@ -106,6 +106,11 @@ private:
     void updateEventBoxAllocation(EventBox& eventBox);
     void updateOpacityToolboxSizeAllocation();
     void updateOpacityToolboxAllocation(EventBox eventBox);
+    void updateOpacityToolboxAllocationX(EventBox& eventBox, const int toolbox_width, const bool isColorItemTooFarLeft,
+                                         const bool isColorItemTooFarRight, const int overlap_offset_value);
+    void updateOpacityToolboxAllocationY(EventBox& eventBox, const int toolbox_height, const bool isColorItemTooFarLeft,
+                                         const bool isColorItemTooFarRight, const bool isColorItemTooFarBottom,
+                                         const int overlap_offset_value);
     std::vector<OpacityPreviewToolbox::EventBox>::iterator findEventBox(GtkWidget* eventBoxWidget);
 
 public:
