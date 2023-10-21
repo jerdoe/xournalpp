@@ -332,8 +332,6 @@ void Control::initWindow(MainWindow* win) {
     this->clipboardHandler = new ClipboardHandler(this, win->getXournal()->getWidget());
 
     this->enableAutosave(settings->isAutosaveEnabled());
-
-    win->getOpacityPreviewToolbox()->update();
 }
 
 auto Control::autosaveCallback(Control* control) -> bool {
