@@ -98,6 +98,17 @@ gboolean OpacityPreviewToolbox::leaveEventBox(GtkWidget* eventBox, GdkEventCross
     if (!OpacityPreviewToolbox::isPointerOverWidget(static_cast<gint>(event->x_root), static_cast<gint>(event->y_root),
                                                     self->opacityPreviewToolbox.widget, self)) {
         self->hideToolbox();
+
+        // When exiting an eventbox matching a ColorToolItem within the floating toolbox
+        // and the pointer is outside the toolbox, hide it.
+        auto result = self->findEventBox(eventBox);
+        FloatingToolbox* oFloatingToolbox = self->theMainWindow->getFloatingToolbox();
+        if (result->inFloatingToolbox == true) {
+            if (!self->isPointerOverWidget(static_cast<int>(event->x_root), static_cast<int>(event->y_root),
+                                           oFloatingToolbox->floatingToolbox, self)) {
+                oFloatingToolbox->hide();
+            }
+        }
     }
     self->odebug_exit();
     return false;

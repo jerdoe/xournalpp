@@ -184,8 +184,25 @@ auto FloatingToolbox::getOverlayPosition(GtkOverlay* overlay, GtkWidget* widget,
 
 void FloatingToolbox::handleLeaveFloatingToolbox(GtkWidget* floatingToolbox, GdkEvent* event, FloatingToolbox* self) {
     if (floatingToolbox == self->floatingToolbox) {
-        if (self->floatingToolboxState != configuration && event->crossing.detail == GDK_NOTIFY_NONLINEAR) {
-            self->hide();
+        if (self->floatingToolboxState != configuration) {
+            // The floating toolbox is hidden when the pointer leaves it,
+            // except when it enters an eventbox that matches a ColorToolItem within the floating toolbox.
+            // In this situation, from the user's perspective, the pointer did not truly leave the floating toolbox;
+            // instead, it entered an invisible widget in front of it.
+            OpacityPreviewToolbox* opacityToolbox = self->mainWindow->getOpacityPreviewToolbox();
+
+            auto criteria = [event, opacityToolbox](OpacityPreviewToolbox::EventBox eventBox) {
+                return OpacityPreviewToolbox::isPointerOverWidget(static_cast<int>(event->crossing.x_root),
+                                                                  static_cast<int>(event->crossing.y_root),
+                                                                  eventBox.widget, opacityToolbox);
+            };
+
+            std::vector<OpacityPreviewToolbox::EventBox>::iterator it =
+                    std::find_if(opacityToolbox->eventBoxes.begin(), opacityToolbox->eventBoxes.end(), criteria);
+
+            if (it == opacityToolbox->eventBoxes.end()) {
+                self->hide();
+            }
         }
     }
 }
