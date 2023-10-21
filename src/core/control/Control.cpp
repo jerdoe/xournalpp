@@ -1091,6 +1091,9 @@ void Control::toolChanged() {
     }
 
     getCursor()->updateCursor();
+    if (win) {
+        win->getOpacityPreviewToolbox()->update();
+    }
 
     if (type != TOOL_TEXT) {
         if (win) {
