@@ -12,6 +12,7 @@
 #include <gtk/gtk.h>  // for GtkButton, GtkOverlay
 
 #include "control/Tool.h"  // for Tool, Tool::toolSizes
+#include "control/ToolHandler.h"  // for Tool, Tool::toolSizes
 #include "gui/toolbarMenubar/ColorToolItem.h"
 #include "util/Color.h"             // for Color
 #include "util/ODebug.h"            // for ODebuggable
@@ -69,6 +70,7 @@ private:
 
 private:
     MainWindow* theMainWindow;
+    ToolHandler* toolHandler = nullptr;
 
     /// The overlay that the toolbox should be displayed in.
     xoj::util::GObjectSPtr<GtkOverlay> overlay;

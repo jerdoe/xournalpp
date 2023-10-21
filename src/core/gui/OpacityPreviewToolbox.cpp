@@ -147,7 +147,7 @@ gboolean OpacityPreviewToolbox::leaveOpacityToolbox(GtkWidget* opacityToolbox, G
 
         self->color.alpha = static_cast<uint8_t>(percentToByte(value));
 
-        ToolHandler* toolHandler = self->theMainWindow->getControl()->getToolHandler();
+        ToolHandler* toolHandler = self->toolHandler;
 
         switch (toolHandler->getToolType()) {
             case TOOL_SELECT_PDF_TEXT_RECT:
@@ -184,9 +184,6 @@ const int PREVIEW_BORDER = 10;
 bool OpacityPreviewToolbox::isEnabled() {
     this->odebug_enter("isEnabled");
 
-    MainWindow* win = this->theMainWindow;
-    ToolHandler* toolHandler = win->getControl()->getToolHandler();
-
     bool result;
 
     switch (toolHandler->getToolType()) {
@@ -212,7 +209,6 @@ bool OpacityPreviewToolbox::isEnabled() {
 void OpacityPreviewToolbox::updateColor() {
     this->odebug_enter("updateColor");
     this->color = theMainWindow->getControl()->getToolHandler()->getColor();
-    ToolHandler* toolHandler = this->theMainWindow->getControl()->getToolHandler();
 
     ToolType tooltype = toolHandler->getToolType();
 
@@ -232,6 +228,9 @@ void OpacityPreviewToolbox::updateColor() {
 void OpacityPreviewToolbox::update() {
     this->odebug_enter("update");
 
+    if (this->toolHandler == nullptr) {
+        this->toolHandler = theMainWindow->getControl()->getToolHandler();
+    }
     bool enabled = this->isEnabled();
 
     if (enabled) {
@@ -511,7 +510,7 @@ static bool inline useBorderForPreview(ToolType tooltype) {
 void OpacityPreviewToolbox::updatePreviewImage() {
     this->odebug_enter("updatePreviewImage");
 
-    bool addBorder = useBorderForPreview(this->theMainWindow->getControl()->getToolHandler()->getToolType());
+    bool addBorder = useBorderForPreview(toolHandler->getToolType());
 
     xoj::util::CairoSurfaceSPtr surface(cairo_image_surface_create(CAIRO_FORMAT_ARGB32, PREVIEW_WIDTH, PREVIEW_HEIGHT),
                                         xoj::util::adopt);
