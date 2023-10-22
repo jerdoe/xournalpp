@@ -108,6 +108,8 @@ gboolean OpacityPreviewToolbox::leaveOpacityToolbox(GtkWidget* opacityToolbox, G
 
     switch (event->detail) {
         case GDK_NOTIFY_INFERIOR:
+            // The user does not truly leave the opacity toolbox
+            // but rather enters a child widget (i.e. slider)
             hideToolbox = false;
             break;
         default:
@@ -116,6 +118,7 @@ gboolean OpacityPreviewToolbox::leaveOpacityToolbox(GtkWidget* opacityToolbox, G
     }
 
     if (hideToolbox) {
+        // Save tool opacity before hiding the toolbox
         GtkRange* range = GTK_RANGE(self->theMainWindow->get("opacityPreviewToolScaleAlpha"));
         double value = gtk_range_get_value(range);
 
@@ -139,6 +142,9 @@ gboolean OpacityPreviewToolbox::leaveOpacityToolbox(GtkWidget* opacityToolbox, G
                 break;
         }
 
+        // Hide the floating toolbox if the mouse is not over it.
+        // This handles the case where the pointer entered the opacity toolbox
+        // for a ColorToolItem within the floating toolbox.
         FloatingToolbox* oFloatingToolbox = self->theMainWindow->getFloatingToolbox();
         if (!isPointerOverWidget(static_cast<int>(event->x_root), static_cast<int>(event->y_root),
                                  oFloatingToolbox->floatingToolbox)) {
@@ -233,6 +239,8 @@ static bool inline isAncestor(GtkWidget* ancestor, GtkWidget* child) {
     return false;
 }
 
+// Create and position an eventbox over each ColorToolItem matching
+// the active color and connect enter/leave handlers.
 void OpacityPreviewToolbox::resetEventBoxes() {
     for (EventBox eventBox: this->eventBoxes) {
         gtk_widget_destroy(eventBox.widget);
@@ -266,7 +274,7 @@ void OpacityPreviewToolbox::resetEventBoxes() {
             refEventBox.inFloatingToolbox = isAncestor(floatingToolbox, refEventBox.item->getItem());
         }
     }
-
+    // Bring the opacity toolbox to the front of the overlay widgets.
     gtk_overlay_reorder_overlay(this->overlay.get(), this->opacityPreviewToolbox.widget, -1);
 }
 
@@ -492,7 +500,7 @@ auto OpacityPreviewToolbox::getOverlayPosition(GtkOverlay* overlay, GtkWidget* w
     auto eventBoxIterator = self->findEventBox(widget);
 
     // Ignore widgets that are neither the opacity toolbox
-    // or the eventboxes to be positioned over ColorToolItems
+    // nor the eventboxes to be positioned over ColorToolItems
     if (widget != self->opacityPreviewToolbox.widget && eventBoxIterator == self->eventBoxes.end()) {
         return false;
     }
