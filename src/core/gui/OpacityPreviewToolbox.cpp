@@ -1,21 +1,21 @@
-#include "OpacityPreviewToolbox.h"  // for std::round
+#include "OpacityPreviewToolbox.h"
 
-#include <cmath>
+#include <cmath>  // for std::round
 
 #include <cairo.h>        // for cairo_set_operator, cairo_rectangle, cairo_...
 #include <glib-object.h>  // for G_CALLBACK, g_signal_connect
 #include <glib.h>         // for gdouble
 
-#include "control/Control.h"      // for Tool...
-#include "control/ToolHandler.h"  // for Tool...
+#include "control/Control.h"
+#include "control/ToolHandler.h"
 #include "gui/toolbarMenubar/ColorToolItem.h"
-#include "gui/toolbarMenubar/ToolMenuHandler.h"  // for Tool...
+#include "gui/toolbarMenubar/ToolMenuHandler.h"
 #include "util/Color.h"
 #include "util/raii/CairoWrappers.h"
 #include "util/raii/GObjectSPtr.h"
 
 #include "FloatingToolbox.h"
-#include "MainWindow.h"  // for MainWindow
+#include "MainWindow.h"
 
 
 static int percentToByte(double percent) { return static_cast<int>(std::round(percent * 2.55)); }
@@ -359,7 +359,6 @@ void OpacityPreviewToolbox::updateOpacityToolboxAllocation(EventBox eventBox) {
                                           overlap_offset_value);
     this->updateOpacityToolboxAllocationY(eventBox, toolbox_height, isColorItemTooFarLeft, isColorItemTooFarRight,
                                           isColorItemTooFarBottom, overlap_offset_value);
-
 }
 
 /**

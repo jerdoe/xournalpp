@@ -1,21 +1,15 @@
 #pragma once
 
-#include <cstdarg>
-#include <cstdint>  // for uint8_t
-#include <memory>   // for unique_ptr
-#include <sstream>
-#include <unordered_set>
 #include <vector>
 
-#include <gdk/gdk.h>  // for GdkRectangle
-#include <glib.h>     // for gboolean
-#include <gtk/gtk.h>  // for GtkButton, GtkOverlay
+#include <gdk/gdk.h>
+#include <glib.h>
+#include <gtk/gtk.h>  // for GtkOverlay
 
-#include "control/Tool.h"  // for Tool, Tool::toolSizes
-#include "control/ToolHandler.h"  // for Tool, Tool::toolSizes
-#include "gui/toolbarMenubar/ColorToolItem.h"
-#include "util/Color.h"             // for Color
-#include "util/raii/GObjectSPtr.h"  // for GObjectSPtr
+#include "control/ToolHandler.h"               // for ToolHandler
+#include "gui/toolbarMenubar/ColorToolItem.h"  // for ColorToolItem
+#include "util/Color.h"                        // for Color
+#include "util/raii/GObjectSPtr.h"             // for GObjectSPtr
 
 #include "FloatingToolbox.h"
 
