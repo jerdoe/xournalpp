@@ -177,10 +177,6 @@ gboolean OpacityPreviewToolbox::leaveOpacityToolbox(GtkWidget* opacityToolbox, G
     return false;
 }
 
-const int PREVIEW_WIDTH = 70;
-const int PREVIEW_HEIGHT = 50;
-const int PREVIEW_BORDER = 10;
-
 bool OpacityPreviewToolbox::isEnabled() {
     this->odebug_enter("isEnabled");
 
@@ -415,18 +411,18 @@ void OpacityPreviewToolbox::updateOpacityToolboxAllocation(EventBox eventBox) {
     // for handling the "notify-leave-event" signal, so that the user can leave
     // the selected ColorToolItem and enter the opacity toolbox without making it
     // disappear.
-    int OVERLAP_OFFSET_VALUE = 2;
+    int overlap_offset_value = 2;
 
     // Increase overlap in corners for an improved user experience,
     // especially due to the rounded corners of the opacity toolbox.
     if (isColorItemTooFarBottom && (isColorItemTooFarRight || isColorItemTooFarLeft)) {
-        OVERLAP_OFFSET_VALUE = 15;
+        overlap_offset_value = 15;
     }
 
     this->updateOpacityToolboxAllocationX(eventBox, toolbox_width, isColorItemTooFarLeft, isColorItemTooFarRight,
-                                          OVERLAP_OFFSET_VALUE);
+                                          overlap_offset_value);
     this->updateOpacityToolboxAllocationY(eventBox, toolbox_height, isColorItemTooFarLeft, isColorItemTooFarRight,
-                                          isColorItemTooFarBottom, OVERLAP_OFFSET_VALUE);
+                                          isColorItemTooFarBottom, overlap_offset_value);
 
     this->odebug_current_func("allocation.x=%i, allocation.y=%i, allocation.width=%i, allocation.height=%i",
                               this->opacityPreviewToolbox.allocation.x, this->opacityPreviewToolbox.allocation.y,
@@ -506,6 +502,10 @@ static bool inline useBorderForPreview(ToolType tooltype) {
             return false;
     }
 }
+
+const int PREVIEW_WIDTH = 70;
+const int PREVIEW_HEIGHT = 50;
+const int PREVIEW_BORDER = 10;
 
 void OpacityPreviewToolbox::updatePreviewImage() {
     this->odebug_enter("updatePreviewImage");
