@@ -15,14 +15,13 @@
 #include "control/ToolHandler.h"  // for Tool, Tool::toolSizes
 #include "gui/toolbarMenubar/ColorToolItem.h"
 #include "util/Color.h"             // for Color
-#include "util/ODebug.h"            // for ODebuggable
 #include "util/raii/GObjectSPtr.h"  // for GObjectSPtr
 
 #include "FloatingToolbox.h"
 
 class MainWindow;
 
-class OpacityPreviewToolbox: public ODebuggable {
+class OpacityPreviewToolbox {
 
 public:
     OpacityPreviewToolbox(MainWindow* theMainWindow, GtkOverlay* overlay);
@@ -65,8 +64,7 @@ private:
 
     static gboolean enterEventBox(GtkWidget* eventBox, GdkEventCrossing* event, OpacityPreviewToolbox* self);
     static gboolean leaveEventBox(GtkWidget* eventBox, GdkEventCrossing* event, OpacityPreviewToolbox* self);
-    static bool isPointerOverWidget(gint pointer_x_root, gint pointer_y_root, GtkWidget* widget,
-                                    OpacityPreviewToolbox* self);
+    static bool isPointerOverWidget(gint pointer_x_root, gint pointer_y_root, GtkWidget* widget);
 
 private:
     MainWindow* theMainWindow;

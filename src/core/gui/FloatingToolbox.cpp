@@ -194,7 +194,7 @@ void FloatingToolbox::handleLeaveFloatingToolbox(GtkWidget* floatingToolbox, Gdk
             auto criteria = [event, opacityToolbox](OpacityPreviewToolbox::EventBox eventBox) {
                 return OpacityPreviewToolbox::isPointerOverWidget(static_cast<int>(event->crossing.x_root),
                                                                   static_cast<int>(event->crossing.y_root),
-                                                                  eventBox.widget, opacityToolbox);
+                                                                  eventBox.widget);
             };
 
             std::vector<OpacityPreviewToolbox::EventBox>::iterator it =
